@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生命波頻 | 配記 Pui-Kei</title>
+    <style>
+        :root {
+            --bg: #111827;
+            --primary: #6366f1;
+            --secondary: #ec4899;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+            --text: #f8fafc;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            height: 100dvh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+
+        /* 統一懸浮導航列 */
+        .top-nav {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            background: var(--glass);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 50px;
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        /* 繪圖畫布 */
+        #pulse-container {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .pulse-path {
+            fill: none;
+            stroke: url(#grad);
+            stroke-width: 4;
+            stroke-linecap: round;
+            filter: drop-shadow(0 0 8px var(--primary));
+        }
+
+        /* 控制面板 */
+        .controls {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 50;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--border);
+            padding: 12px 20px;
+            border-radius: 12px;
+            color: white;
+            outline: none;
+        }
+
+        .btn-add {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .event-node {
+            position: absolute;
+            transform: translate(-50%, -100%);
+            background: white;
+            color: black;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            pointer-events: auto;
+            white-space: nowrap;
+        }
+
+        /* 說明書 Modal */
+        .modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(10px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px;
+        }
+        .modal-content {
+            background: #1e293b; color: #cbd5e1; padding: 30px; border-radius: 24px; max-width: 450px;
+            border: 1px solid var(--border);
+        }
+        .close-btn { background: var(--primary); color: white; border: none; padding: 14px; width: 100%; border-radius: 12px; margin-top: 20px; font-weight: bold; cursor:pointer;}
+    </style>
+</head>
+<body>
+
+    <div class="top-nav">
+        <a href="../index.html" class="nav-btn">← 首頁</a>
+        <button class="nav-btn" onclick="toggleModal(true)">ℹ️ 說明書</button>
+    </div>
+
+    <div id="pulse-container">
+        <svg id="svg-canvas">
+            <defs>
+                <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:var(--primary);stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:var(--secondary);stop-opacity:1" />
+                </linearGradient>
+            </defs>
+            <path id="path" class="pulse-path" d="" />
+        </svg>
+        <div id="nodes-layer"></div>
+    </div>
+
+    <div class="controls">
+        <p style="font-size: 0.8rem; opacity: 0.6; text-align: center;">在上方畫面上手動拖動，描繪你的生命起伏波形</p>
+        <div class="input-row">
+            <input type="text" id="event-input" placeholder="標記重要時刻 (如：小組開始、新轉變)..." maxlength="15">
+            <button class="btn-add" onclick="addEvent()">標記</button>
+        </div>
+        <button class="nav-btn" style="background: rgba(239, 68, 68, 0.2); color: #f87171;" onclick="clearPath()">清空波段</button>
+    </div>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <h2 style="color: var(--primary); margin-bottom: 15px;">〰️ 生命波頻應用說明</h2>
+            <p>這是一個<strong>敘事輔導與生命回顧</strong>工具：</p>
+            <ul style="margin: 20px 0; padding-left: 20px; line-height: 1.7; color:#94a3b8;">
+                <li><strong>視覺化起伏：</strong> 讓服務對象親手畫出某段時間的「能量感」。波峰代表高昂或壓力，波谷代表沈澱或低落。</li>
+                <li><strong>非線性記錄：</strong> 不同於傳統清單，波形能呈現情緒的連貫性。</li>
+                <li><strong>應用場景：</strong> 適合青少年小組進行週記分享，或是與長者共同整理生命故事時使用。</li>
+            </ul>
+            <button class="close-btn" onclick="toggleModal(false)">開始描繪</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('svg-canvas');
+        const path = document.getElementById('path');
+        const nodesLayer = document.getElementById('nodes-layer');
+        const eventInput = document.getElementById('event-input');
+        
+        let points = [];
+        let isDrawing = false;
+
+        function toggleModal(show) {
+            document.getElementById('modal').style.display = show ? 'flex' : 'none';
+        }
+
+        // 繪圖邏輯
+        canvas.addEventListener('pointerdown', e => {
+            isDrawing = true;
+            addPoint(e);
+        });
+
+        canvas.addEventListener('pointermove', e => {
+            if (!isDrawing) return;
+            addPoint(e);
+            updatePath();
+        });
+
+        canvas.addEventListener('pointerup', () => {
+            isDrawing = false;
+        });
+
+        function addPoint(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // 保持 x 軸遞增或自由繪製（這裡選擇自由繪製以增加動態感）
+            points.push({ x, y });
+            // 限制點的數量防止性能下降
+            if (points.length > 100) points.shift();
+        }
+
+        function updatePath() {
+            if (points.length < 2) return;
+            let d = `M ${points[0].x} ${points[0].y}`;
+            for (let i = 1; i < points.length; i++) {
+                // 使用貝茲曲線平滑化
+                const prev = points[i - 1];
+                const curr = points[i];
+                const mx = (prev.x + curr.x) / 2;
+                const my = (prev.y + curr.y) / 2;
+                d += ` Q ${prev.x} ${prev.y} ${mx} ${my}`;
+            }
+            path.setAttribute('d', d);
+        }
+
+        function addEvent() {
+            const text = eventInput.value.trim();
+            if (!text || points.length === 0) return;
+
+            const lastPoint = points[points.length - 1];
+            const node = document.createElement('div');
+            node.className = 'event-node';
+            node.innerText = text;
+            node.style.left = `${lastPoint.x}px`;
+            node.style.top = `${lastPoint.y - 10}px`;
+            
+            nodesLayer.appendChild(node);
+            eventInput.value = '';
+            if (navigator.vibrate) navigator.vibrate(20);
+        }
+
+        function clearPath() {
+            points = [];
+            path.setAttribute('d', '');
+            nodesLayer.innerHTML = '';
+        }
+
+        // 預防 iOS 滾動
+        document.addEventListener('touchstart', (e) => {
+            if (e.target.closest('#svg-canvas')) e.preventDefault();
+        }, { passive: false });
+
+    </script>
+</body>
+</html>

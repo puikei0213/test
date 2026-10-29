@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一鍵抽籤排序工具</title>
+    
+    <!-- 引入 Tailwind CSS 以設定樣式 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 引入 FontAwesome 圖示庫 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 引入 React 和 ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- 引入 Babel 讓瀏覽器即時編譯 JSX (已更新至支援新語法的版本) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 引入 SheetJS 處理 Excel 檔案 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <!-- React 應用程式會掛載到這個 div 中 -->
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        function App() {
+            const [step, setStep] = useState(1); 
+            const [isDrawing, setIsDrawing] = useState(false);
+            const [currentDrawText, setCurrentDrawText] = useState('');
+            
+            const [fileName, setFileName] = useState('');
+            const [headers, setHeaders] = useState([]);
+            const [rows, setRows] = useState([]);
+            
+            const [shuffledHeaders, setShuffledHeaders] = useState([]);
+            const [shuffledRows, setShuffledRows] = useState([]);
+            
+            const [error, setError] = useState('');
+            const fileInputRef = useRef(null);
+
+            const handleFileUpload = (e) => {
+                setError('');
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const fileExt = file.name.split('.').pop().toLowerCase();
+                if (!['xlsx', 'xls', 'csv'].includes(fileExt)) {
+                    setError('請上載支援的檔案格式 (.xlsx, .xls, .csv)');
+                    return;
+                }
+
+                setFileName(file.name);
+
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    try {
+                        const data = evt.target.result;
+                        const workbook = window.XLSX.read(data, { type: 'array' });
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        
+                        const jsonData = window.XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+                        
+                        if (jsonData.length <= 1) {
+                            setError('檔案內容似乎是空的或只有標題列，請檢查檔案內容。');
+                            return;
+                        }
+
+                        const extractedHeaders = jsonData[0];
+                        const extractedRows = jsonData.slice(1).filter(row => 
+                            row.some(cell => cell !== undefined && cell !== null && cell !== "")
+                        );
+
+                        setHeaders(extractedHeaders);
+                        setRows(extractedRows);
+                        setStep(2);
+                    } catch (err) {
+                        console.error(err);
+                        setError('讀取檔案時發生錯誤，請確保檔案格式正確且沒有損壞。');
+                    }
+                };
+                reader.onerror = () => setError('檔案讀取失敗');
+                reader.readAsArrayBuffer(file);
+                
+                if (fileInputRef.current) fileInputRef.current.value = '';
+            };
+
+            const handleShuffle = () => {
+                setIsDrawing(true);
+                
+                let ticks = 0;
+                const maxTicks = 50; 
+                
+                const interval = setInterval(() => {
+                    const randomRow = rows[Math.floor(Math.random() * rows.length)];
+                    const displayText = randomRow ? randomRow.find(cell => cell !== "" && cell !== undefined) : "抽籤中...";
+                    setCurrentDrawText(displayText || "...");
+                    
+                    ticks++;
+                    if (ticks >= maxTicks) {
+                        clearInterval(interval);
+                        finishShuffle();
+                    }
+                }, 50); 
+            };
+
+            const finishShuffle = () => {
+                let array = [...rows];
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+
+                const newHeaders = ["抽籤次序", ...headers];
+                const newRows = array.map((row, index) => {
+                    const normalizedRow = headers.map((_, i) => row[i] !== undefined ? row[i] : "");
+                    return [index + 1, ...normalizedRow];
+                });
+
+                setShuffledHeaders(newHeaders);
+                setShuffledRows(newRows);
+                setIsDrawing(false);
+                setStep(3);
+            };
+
+            const handleExport = () => {
+                try {
+                    const wsData = [shuffledHeaders, ...shuffledRows];
+                    const worksheet = window.XLSX.utils.aoa_to_sheet(wsData);
+                    
+                    const wscols = [{ wch: 10 }, ...headers.map(() => ({ wch: 20 }))];
+                    worksheet['!cols'] = wscols;
+
+                    const workbook = window.XLSX.utils.book_new();
+                    window.XLSX.utils.book_append_sheet(workbook, worksheet, "抽籤結果");
+                    
+                    const exportFileName = `抽籤結果_${new Date().toISOString().slice(0,10).replace(/-/g, "")}.xlsx`;
+                    window.XLSX.writeFile(workbook, exportFileName);
+                } catch (err) {
+                    console.error(err);
+                    setError('匯出檔案時發生錯誤。');
+                }
+            };
+
+            const resetTool = () => {
+                setStep(1);
+                setFileName('');
+                setHeaders([]);
+                setRows([]);
+                setShuffledHeaders([]);
+                setShuffledRows([]);
+                setError('');
+            };
+
+            const renderTable = (tableHeaders, tableRows) => {
+                const previewLimit = 100;
+                const previewRows = tableRows.slice(0, previewLimit);
+
+                return (
+                    <div className="w-full">
+                        <div className="overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
+                            <table className="w-full text-sm text-left text-gray-600">
+                                <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+                                    <tr>
+                                        {tableHeaders.map((header, idx) => (
+                                            <th key={idx} scope="col" className="px-6 py-3 font-semibold whitespace-nowrap">
+                                                {header || `欄位 ${idx + 1}`}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {previewRows.map((row, rowIdx) => (
+                                        <tr key={rowIdx} className="bg-white border-b hover:bg-gray-50 transition-colors">
+                                            {tableHeaders.map((_, colIdx) => (
+                                                <td key={colIdx} className="px-6 py-4 whitespace-nowrap">
+                                                    {row[colIdx]}
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {tableRows.length > previewLimit && (
+                            <p className="text-xs text-gray-500 mt-2 text-center">
+                                * 僅顯示首 {previewLimit} 筆資料預覽，共 {tableRows.length} 筆資料。匯出時將包含完整資料。
+                            </p>
+                        )}
+                    </div>
+                );
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8 font-sans">
+                    <div className="max-w-4xl mx-auto">
+                        
+                        <div className="text-center mb-10">
+                            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+                                <i className="fa-solid fa-shuffle text-3xl text-blue-600"></i>
+                            </div>
+                            <h1 className="text-3xl font-bold text-gray-900 mb-2">一鍵抽籤排序工具</h1>
+                            <p className="text-gray-500 max-w-xl mx-auto">
+                                上載包含名單的 Excel 或 CSV 檔案，系統將會隨機打亂所有資料並排列出抽籤次序，最後可一鍵匯出結果。
+                            </p>
+                        </div>
+
+                        {error && (
+                            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-md flex items-start">
+                                <i className="fa-solid fa-circle-exclamation text-xl text-red-500 mt-0.5 mr-3 flex-shrink-0"></i>
+                                <p className="text-red-700">{error}</p>
+                            </div>
+                        )}
+
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div className="flex border-b border-gray-100 bg-gray-50/50">
+                                <div className={`flex-1 py-4 text-center text-sm font-medium ${step >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+                                    1. 上載名單
+                                </div>
+                                <div className={`flex-1 py-4 text-center text-sm font-medium ${step >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+                                    2. 預覽及抽籤
+                                </div>
+                                <div className={`flex-1 py-4 text-center text-sm font-medium ${step === 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+                                    3. 完成及匯出
+                                </div>
+                            </div>
+
+                            <div className="p-6 md:p-8">
+                                
+                                {step === 1 && (
+                                    <div className="text-center py-10">
+                                        <label className="cursor-pointer group block max-w-xl mx-auto">
+                                            <div className="border-2 border-dashed border-gray-300 rounded-xl p-12 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200">
+                                                <i className="fa-solid fa-file-excel text-5xl text-gray-400 group-hover:text-blue-500 mx-auto mb-4 block transition-colors"></i>
+                                                <h3 className="text-lg font-semibold text-gray-700 mb-2">點擊選擇檔案</h3>
+                                                <p className="text-sm text-gray-500">支援 .xlsx, .xls, .csv 檔案</p>
+                                                <p className="text-xs text-gray-400 mt-4">注意：第一列將會被視為標題列</p>
+                                            </div>
+                                            <input 
+                                                type="file" 
+                                                className="hidden" 
+                                                accept=".xlsx, .xls, .csv" 
+                                                onChange={handleFileUpload}
+                                                ref={fileInputRef}
+                                            />
+                                        </label>
+                                    </div>
+                                )}
+
+                                {step === 2 && (
+                                    <div className="space-y-6">
+                                        {isDrawing ? (
+                                            <div className="py-20 flex flex-col items-center justify-center space-y-8 bg-blue-50/50 rounded-2xl border border-blue-100">
+                                                <div className="relative">
+                                                    <div className="absolute inset-0 bg-blue-400 rounded-full blur-xl opacity-20 animate-pulse"></div>
+                                                    <i className="fa-solid fa-rotate text-6xl text-blue-600 animate-spin relative z-10"></i>
+                                                </div>
+                                                <div className="text-center space-y-4">
+                                                    <h3 className="text-2xl font-bold text-gray-800">正在為 {rows.length} 筆資料進行隨機大洗牌...</h3>
+                                                    <div className="h-16 flex items-center justify-center overflow-hidden px-4">
+                                                        <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 drop-shadow-sm truncate max-w-full">
+                                                            {currentDrawText}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <React.Fragment>
+                                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-blue-50 p-4 rounded-xl">
+                                                    <div>
+                                                        <h3 className="font-semibold text-blue-900 flex items-center">
+                                                            <i className="fa-solid fa-file-excel mr-2"></i>
+                                                            {fileName}
+                                                        </h3>
+                                                        <p className="text-sm text-blue-700 mt-1">
+                                                            成功讀取 {rows.length} 筆資料
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex gap-2 w-full sm:w-auto">
+                                                        <button 
+                                                            onClick={resetTool}
+                                                            className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex-1 sm:flex-none flex justify-center items-center"
+                                                        >
+                                                            重新上載
+                                                        </button>
+                                                        <button 
+                                                            onClick={handleShuffle}
+                                                            className="px-6 py-2 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm flex-1 sm:flex-none flex justify-center items-center transition-colors"
+                                                        >
+                                                            <i className="fa-solid fa-shuffle mr-2"></i>
+                                                            一鍵抽籤
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <h4 className="text-sm font-semibold text-gray-700 mb-3">資料預覽（未排序）</h4>
+                                                    {renderTable(headers, rows)}
+                                                </div>
+                                            </React.Fragment>
+                                        )}
+                                    </div>
+                                )}
+
+                                {step === 3 && (
+                                    <div className="space-y-6">
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-green-50 p-4 rounded-xl border border-green-100">
+                                            <div>
+                                                <h3 className="font-semibold text-green-900 flex items-center">
+                                                    <i className="fa-solid fa-circle-check text-green-600 text-xl mr-2"></i>
+                                                    抽籤完成！
+                                                </h3>
+                                                <p className="text-sm text-green-700 mt-1">
+                                                    已為 {rows.length} 筆資料隨機排序，並加上「抽籤次序」。
+                                                </p>
+                                            </div>
+                                            <div className="flex gap-2 w-full sm:w-auto">
+                                                <button 
+                                                    onClick={resetTool}
+                                                    className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex-1 sm:flex-none flex justify-center items-center"
+                                                >
+                                                    重新開始
+                                                </button>
+                                                <button 
+                                                    onClick={handleExport}
+                                                    className="px-6 py-2 text-sm font-bold text-white bg-green-600 rounded-lg hover:bg-green-700 shadow-sm flex-1 sm:flex-none flex justify-center items-center transition-colors"
+                                                >
+                                                    <i className="fa-solid fa-download mr-2"></i>
+                                                    匯出 Excel
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <h4 className="text-sm font-semibold text-gray-700 mb-3">抽籤結果預覽</h4>
+                                            {renderTable(shuffledHeaders, shuffledRows)}
+                                        </div>
+                                    </div>
+                                )}
+
+                            </div>
+                        </div>
+
+                        <div className="mt-8 text-center text-sm text-gray-400">
+                            <p>這個工具在您的瀏覽器中運行，檔案不會上傳到任何伺服器，保障您的資料安全。</p>
+                        </div>
+
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

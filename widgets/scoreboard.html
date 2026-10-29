@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>紅藍大對決 | 配記</title>
+    <style>
+        body { margin:0; display:flex; flex-direction:column; height:100vh; font-family:-apple-system, sans-serif; background: #111; overflow: hidden;}
+        
+        .top-nav { position: fixed; top: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; z-index: 100; pointer-events: none; }
+        .nav-btn { pointer-events: auto; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); color: white; text-decoration: none; padding: 10px 20px; border-radius: 50px; font-weight: bold; font-size: 1rem; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; transition: 0.2s; }
+
+        .board { flex: 1; display: flex; }
+        .team { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; cursor:pointer; user-select:none; transition: filter 0.1s;}
+        .team:active { filter: brightness(1.2); }
+        .red { background: linear-gradient(135deg, #FF3B30, #C91007); border-right: 2px solid rgba(0,0,0,0.5); }
+        .blue { background: linear-gradient(135deg, #007AFF, #004D99); }
+        
+        h1 { font-size: clamp(8rem, 25vw, 20rem); margin:0; line-height: 1; font-weight: 800; text-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        h2 { font-size: clamp(1.5rem, 4vw, 3rem); opacity:0.9; margin: 0 0 20px 0; letter-spacing: 2px; }
+        
+        .controls { position:absolute; bottom:30px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.7); padding:15px 25px; border-radius:50px; display: flex; gap: 15px; backdrop-filter: blur(10px); }
+        .ctrl-btn { background:white; color: #333; border:none; padding:10px 20px; border-radius:50px; font-size:1rem; font-weight: bold; cursor:pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .ctrl-btn:active { transform: scale(0.95); }
+
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(5px); }
+        .modal-content { background: white; color: #333; padding: 30px; border-radius: 20px; max-width: 400px; }
+        .modal-content h2 { margin-top: 0; color: #FF3B30; }
+        .close-btn { width: 100%; background: #333; color: white; border: none; padding: 12px; border-radius: 12px; font-size: 1rem; font-weight: bold; margin-top: 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="top-nav">
+        <a href="../index.html" class="nav-btn">← 首頁</a>
+        <button class="nav-btn" onclick="toggleInfo(event)">ℹ️ 說明書</button>
+    </div>
+
+    <div class="board">
+        <div class="team red" onclick="updateScore('red', 1)">
+            <h2>紅隊 RED</h2>
+            <h1 id="score-red">0</h1>
+        </div>
+        <div class="team blue" onclick="updateScore('blue', 1)">
+            <h2>藍隊 BLUE</h2>
+            <h1 id="score-blue">0</h1>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="ctrl-btn" onclick="updateScore('red', -1)">紅 -1</button>
+        <button class="ctrl-btn" onclick="reset()" style="background:#FFD60A;">歸零</button>
+        <button class="ctrl-btn" onclick="updateScore('blue', -1)">藍 -1</button>
+    </div>
+
+    <div id="infoModal" class="modal" onclick="toggleInfo(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2>🏆 紅藍大對決計分板</h2>
+            <p><strong>應用場景：</strong></p>
+            <p>1. <strong>問答比賽：</strong> 中心節日攤位或問答環節，直接用 iPad 顯示分數，代替傳統寫黑板。<br>
+               2. <strong>體能競技：</strong> 適合輪椅人士或長者防跌競技，點擊全螢幕任何位置即可加分，方便工作人員單手操作。<br>
+               3. <strong>意見投票：</strong> 化身為即時投票器（如支持紅方 vs 藍方），增加小組互動性。</p>
+            <button class="close-btn" onclick="toggleInfo(event)">完成設定</button>
+        </div>
+    </div>
+
+    <script>
+        let scores = { red: 0, blue: 0 };
+        function toggleInfo(e) {
+            if(e) e.stopPropagation();
+            const modal = document.getElementById('infoModal');
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        }
+        function updateScore(team, val) {
+            scores[team] += val;
+            if(scores[team] < 0) scores[team] = 0;
+            document.getElementById(`score-${team}`).innerText = scores[team];
+        }
+        function reset() {
+            if(confirm('確定要將分數歸零嗎？')) {
+                scores = { red: 0, blue: 0 };
+                updateScore('red', 0); updateScore('blue', 0);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>活動音效板 | 配記</title>
+    <style>
+        body { margin:0; background:#111827; color:white; font-family:-apple-system, sans-serif; display:flex; flex-direction:column; align-items:center; min-height:100vh; padding: 80px 20px 20px; user-select:none; }
+        
+        .top-nav { position: fixed; top: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; z-index: 100; pointer-events: none; }
+        .nav-btn { pointer-events: auto; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); color: white; text-decoration: none; padding: 10px 20px; border-radius: 50px; font-weight: bold; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; }
+        
+        h1 { margin: 0 0 30px 0; font-size: 2rem; color: #94A3B8; }
+
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; width: 100%; max-width: 500px; }
+        
+        .sound-btn { background: #1E293B; border: 2px solid #334155; border-radius: 20px; padding: 30px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.1s; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        .sound-btn:active { transform: scale(0.95); background: #334155; }
+        
+        .icon { font-size: 4rem; margin-bottom: 10px; }
+        .label { font-size: 1.2rem; font-weight: bold; color: #E2E8F0; }
+
+        /* 顏色定義 */
+        .correct { border-color: #2ECC71; } .correct .icon { text-shadow: 0 0 20px rgba(46,204,113,0.5); }
+        .wrong { border-color: #FF3B30; } .wrong .icon { text-shadow: 0 0 20px rgba(255,59,48,0.5); }
+        .tada { border-color: #FBBF24; } .tada .icon { text-shadow: 0 0 20px rgba(251,191,36,0.5); }
+        .alert { border-color: #0066FF; } .alert .icon { text-shadow: 0 0 20px rgba(0,102,255,0.5); }
+
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: white; color: #333; padding: 30px; border-radius: 20px; max-width: 400px; }
+        .modal-content h2 { margin-top: 0; color: #8B5CF6; }
+        .close-btn { width: 100%; background: #8B5CF6; color: white; border: none; padding: 12px; border-radius: 12px; font-size: 1rem; font-weight: bold; margin-top: 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="top-nav">
+        <a href="../index.html" class="nav-btn">← 首頁</a>
+        <button class="nav-btn" onclick="toggleInfo(event)">ℹ️ 說明書</button>
+    </div>
+
+    <h1>🔊 活動音效板</h1>
+
+    <div class="grid">
+        <div class="sound-btn correct" onclick="playSound('correct')">
+            <div class="icon">⭕</div>
+            <div class="label">答中 (叮叮)</div>
+        </div>
+        <div class="sound-btn wrong" onclick="playSound('wrong')">
+            <div class="icon">❌</div>
+            <div class="label">答錯 (嘟嘟)</div>
+        </div>
+        <div class="sound-btn tada" onclick="playSound('tada')">
+            <div class="icon">🎉</div>
+            <div class="label">升級 (登登)</div>
+        </div>
+        <div class="sound-btn alert" onclick="playSound('alert')">
+            <div class="icon">⚠️</div>
+            <div class="label">注意 (嗶嗶)</div>
+        </div>
+    </div>
+
+    <div id="infoModal" class="modal" onclick="toggleInfo(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2>🔊 活動音效板</h2>
+            <p><strong>應用場景：</strong></p>
+            <p>1. <strong>問答比賽主持：</strong> 配合紅藍計分板，一人用 iPad 控制分數，另一人用手機撳音效，令活動瞬間變得有綜藝節目感！<br>
+               2. <strong>講故事/話劇：</strong> 作為簡單的音效道具，增加戲劇效果。<br>
+               3. <strong>無依賴技術：</strong> 聲音由瀏覽器即時運算生成，無須下載檔案，沒有網絡也能發聲！</p>
+            <button class="close-btn" onclick="toggleInfo(event)">開始打碟</button>
+        </div>
+    </div>
+
+    <script>
+        function toggleInfo(e) {
+            if(e) e.stopPropagation();
+            const modal = document.getElementById('infoModal');
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        // Web Audio API 生成音效 (零延遲、免載入)
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playSound(type) {
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(1, now + 0.05);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            } 
+            else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(1, now + 0.05);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now); osc.stop(now + 0.4);
+            }
+            else if (type === 'tada') {
+                osc.type = 'square';
+                // 琶音效果
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.setValueAtTime(500, now + 0.1);
+                osc.frequency.setValueAtTime(600, now + 0.2);
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(0.5, now + 0.05);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                osc.start(now); osc.stop(now + 0.6);
+            }
+            else if (type === 'alert') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(600, now);
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(1, now + 0.02);
+                gainNode.gain.setValueAtTime(0, now + 0.1);
+                gainNode.gain.setValueAtTime(1, now + 0.15);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            }
+        }
+    </script>
+</body>
+</html>

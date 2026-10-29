@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>「PPT」內容提示詞產生器 V1.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        #resizer:hover { background-color: #6366f1; }
+        #resizer.resizing { background-color: #6366f1; }
+        
+        .selection-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 11pt;
+            padding: 6px 12px;
+        }
+        
+        .selection-btn.active {
+            border-color: #6366f1;
+            background-color: #eef2ff;
+            color: #4338ca;
+            font-weight: bold;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .selection-btn:not(.active):not(.clear-btn) {
+            border-color: #e2e8f0;
+            background-color: #ffffff;
+            color: #64748b;
+        }
+
+        .selection-btn:not(.active):not(.clear-btn):hover {
+            border-color: #6366f1;
+            background-color: #f8fafc;
+            color: #4338ca;
+        }
+
+        .clear-btn {
+            background-color: #f97316 !important;
+            color: white !important;
+            border-color: #f97316 !important;
+            font-weight: bold;
+        }
+        .clear-btn:hover {
+            background-color: #ea580c !important;
+            border-color: #ea580c !important;
+        }
+
+        .smart-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+            color: #6366f1;
+            font-weight: bold;
+        }
+        .smart-toggle input {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #6366f1;
+        }
+
+        body {
+            font-size: 11pt;
+        }
+    </style>
+</head>
+<body class="h-screen bg-slate-50 flex flex-col font-sans text-slate-900 overflow-hidden">
+
+    <!-- Header -->
+    <header class="shrink-0 py-3 px-4 border-b border-slate-200 bg-white z-10 shadow-sm">
+        <div class="max-w-full mx-auto flex items-center justify-between">
+            <h1 class="text-base font-black text-slate-800 flex items-center gap-2">
+                <span class="bg-indigo-600 text-white px-2 py-0.5 rounded text-[11pt] tracking-tighter shadow-sm uppercase">PPT</span>
+                「PPT」內容提示詞產生器 <span class="hidden sm:inline text-[11pt] text-slate-400 font-normal uppercase ml-2">謝謝「觀點LAB」分享</span>
+            </h1>
+            <div class="flex items-center gap-2">
+                <button id="reset-all-btn" class="text-[11pt] font-bold text-red-500 hover:text-red-700 hover:bg-red-100 border border-red-100 bg-red-50 px-3 py-1.5 rounded-lg transition-all active:scale-95 uppercase tracking-tighter flex items-center gap-1.5">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> <span class="hidden sm:inline">重置所有設定</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col md:flex-row overflow-hidden p-2 gap-2" id="container">
+        
+        <!-- Left Panel (Settings) -->
+        <div id="left-panel" class="flex-1 md:flex-none flex flex-col overflow-hidden border border-slate-200 rounded-lg md:rounded-r-none bg-white shadow-sm" style="flex-basis: 55%;">
+            <div class="flex-grow overflow-y-auto p-4 md:p-5 scrollbar-thin">
+                <div class="max-w-3xl mx-auto" id="config-sections">
+                    
+                    <!-- Title Input -->
+                    <div class="mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <h3 class="text-[11pt] font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <i data-lucide="target" class="w-4 h-4 text-indigo-500"></i> 內容主題 / 核心目標
+                        </h3>
+                        <textarea id="title-input" rows="2" placeholder="例如：2025 AI 趨勢分析與企業導入指南..." class="w-full px-4 py-3 rounded-lg border border-slate-200 bg-white text-[11pt] outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all shadow-sm resize-none scrollbar-thin"></textarea>
+                    </div>
+
+                    <!-- Dynamic Selection Groups -->
+                    <div id="selection-groups-container" class="space-y-6"></div>
+                    
+                    <!-- Custom Notes -->
+                    <div class="mt-6 pt-6 border-t border-slate-100">
+                        <h3 class="text-[11pt] font-bold text-slate-500 uppercase mb-2 flex items-center gap-2">
+                            <i data-lucide="pen-line" class="w-4 h-4 text-indigo-500"></i> 9. 額外要求 (補充細節)
+                        </h3>
+                        <textarea id="custom-notes-input" placeholder="請在此輸入特定的大綱要求或參考細節（如：特定章節、關鍵字限制）..." class="w-full h-24 p-4 rounded-lg border border-slate-200 bg-slate-50 text-[11pt] outline-none focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-100 transition-all resize-none shadow-inner scrollbar-thin"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resizer (Desktop Only) -->
+        <div id="resizer" class="hidden md:flex w-1.5 h-full cursor-col-resize transition-colors items-center justify-center shrink-0 bg-slate-200 hover:bg-indigo-400 group z-10">
+            <div class="w-0.5 h-16 bg-slate-400 group-hover:bg-white rounded-full transition-colors"></div>
+        </div>
+
+        <!-- Right Panel (Output) -->
+        <div id="right-panel" class="flex-1 min-w-0 flex flex-col border border-slate-800 rounded-lg md:rounded-l-none shadow-xl bg-slate-900">
+            <div class="px-4 py-3 bg-slate-800 flex justify-between items-center border-b border-slate-700 shrink-0 rounded-t-lg md:rounded-tl-none">
+                <span class="text-[11pt] text-slate-400 font-mono tracking-widest uppercase flex items-center gap-2">
+                    <i data-lucide="terminal" class="w-4 h-4"></i> Drafting Prompt
+                </span>
+                <button id="copy-btn" class="text-[11pt] font-bold bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded-lg transition-all active:scale-95 shadow-md uppercase tracking-tight flex items-center gap-2">
+                    <i data-lucide="copy" class="w-4 h-4"></i> <span>Copy Prompt</span>
+                </button>
+            </div>
+            <div class="p-5 md:p-6 overflow-y-auto flex-grow font-mono text-[11pt] text-indigo-50 leading-relaxed scrollbar-thin bg-[#0f172a]">
+                <pre id="prompt-output" class="whitespace-pre-wrap break-words font-mono"></pre>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // 智慧建議對應表
+        const TYPE_DEFAULTS = {
+            youtube: { role: 'psycho', structure: 'aida', tone: 'humor', audience: 'public', format: 'transcript', requirements: ['hook', 'visual', 'gold-sentence'], wordCount: 'long' },
+            outline: { role: 'strategist', structure: 'pyramid', tone: 'professional', audience: 'execs', format: 'framework', requirements: ['data-driven', 'gold-sentence'], wordCount: 'framework' },
+            script: { role: 'mkt-strategist', structure: 'scqa', tone: 'epic', audience: 'public', format: 'dual-col', requirements: ['hook', 'visual'], wordCount: 'flexible' },
+            project: { role: 'mkt-strategist', structure: 'problem-solution', tone: 'professional', audience: 'investor', format: 'slide-pages', requirements: ['data-driven', 'cta'], wordCount: 'long' },
+            course: { role: 'lecturer', structure: 'golden-circle', tone: 'inspiring', audience: 'layman', format: 'slide-pages', requirements: ['analogy', 'cta'], wordCount: 'long' },
+            social: { role: 'psycho', structure: 'aida', tone: 'provoke', audience: 'public', format: 'threads', requirements: ['hook', 'gold-sentence'], wordCount: 'short' },
+            copy: { role: 'sales', structure: 'pastor', tone: 'empathy', audience: 'prospect', format: 'framework', requirements: ['hook', 'cta', 'data-driven'], wordCount: 'medium' },
+            infographic: { role: 'tech', structure: 'problem-solution', tone: 'inspiring', audience: 'public', format: 'slide-pages', requirements: ['visual', 'gold-sentence'], wordCount: 'short' },
+            investor_deck: { role: 'biz-analyst', structure: 'pyramid', tone: 'professional', audience: 'investor', format: 'slide-pages', requirements: ['data-driven', 'cta'], wordCount: 'medium' },
+            report_deck: { role: 'biz-analyst', structure: 'pyramid', tone: 'objective', audience: 'execs', format: 'slide-pages', requirements: ['data-driven', 'visual'], wordCount: 'medium' }
+        };
+
+        const INITIAL_CONFIG = {
+            infographics: [
+                { id: 'info1', label: '懶人包1', prompt: '【結構風格：懶人包 1】請採取條列式重點、直觀對比、極簡視覺指引的懶人包風格。' },
+                { id: 'info2', label: '懶人包2', prompt: '【結構風格：懶人包 2】請採取步驟引導、圖文交錯、核心行動導向的懶人包風格。' },
+                { id: 'info3', label: '懶人包3', prompt: '【結構風格：懶人包 3】請採取數據驅動、資訊圖表化、深度解析的懶人包風格。' },
+                { id: 'info4', label: '懶人包4', prompt: '【結構風格：懶人包 4】請採取故事化敘事、情感共鳴、情境引導的懶人包風格。' },
+                { id: 'info5', label: '懶人包5', prompt: '【結構風格：懶人包 5】請採取挑戰傳統、犀利反思、強烈對比的懶人包風格。' },
+                { id: 'info6', label: '懶人包6', prompt: '【結構風格：懶人包 6】請採取 FAQ 問答式、解決痛點、快速對策的懶人包風格。' }
+            ],
+            types: [
+                { id: 'youtube', label: 'YT 流量企劃', prompt: '你是一位百萬訂閱影音策略大師。請規劃一份高點閱潛力、高留存率的影片企劃。' },
+                { id: 'outline', label: '簡報製作', prompt: '你是一位專業策略顧問。請生成一份邏輯嚴密、結構完整的簡報大綱與視覺建議。' },
+                { id: 'script', label: '影音腳本', prompt: '你是一位資深編劇。請規劃一份節奏感強、適合拍攝的腳本。' },
+                { id: 'project', label: '商業／行銷企劃', prompt: '你是一位資深企劃經理。請撰寫一份具備可行性與目標明確的商業或行銷專案企劃。' },
+                { id: 'course', label: '教學簡報', prompt: '你是一位教學設計專家。請設計一套針對教學目標、循序漸進的教學簡報大綱。' },
+                { id: 'social', label: '社群貼文', prompt: '你是一位社群行銷專家。請規劃具備高互動潛力、符合社群語境的貼文。' },
+                { id: 'copy', label: '產品文案', prompt: '你是一位王牌文案人。請設計一份強調賣點轉化、解決痛點的銷售架構。' },
+                { id: 'infographic', label: '懶人包', prompt: '你是一位資訊圖表專家。請設計一份資訊高度濃縮、視覺引導強烈的懶人包架構。' },
+                { id: 'investor_deck', label: '投資人簡報', prompt: '你是一位資深融資顧問。請針對投資人需求，聚焦市場規模、商業模式與競爭壁壘規劃簡報大綱。' },
+                { id: 'report_deck', label: '報告型簡報', prompt: '你是一位商業分析師。請規劃一份以數據為核心、結論導向的專業報告型簡報大綱。' }
+            ],
+            roles: [
+                { id: 'strategist', label: '策略顧問', prompt: '你擅長結構化思維與商業邏輯拆解。' },
+                { id: 'lecturer', label: '學術教授', prompt: '你擅長將複雜知識拆解為易於吸收的教學體系。' },
+                { id: 'sales', label: '提案專家', prompt: '你擅長抓住痛點並提出極具說服力的方案。' },
+                { id: 'psycho', label: '心理學家', prompt: '你擅長分析受眾認知偏誤與情緒觸點。' },
+                { id: 'tech', label: '技術專家', prompt: '你擅長精確描述底層原理與技術架構。' },
+                { id: 'mkt-strategist', label: '行銷策略師', prompt: '你擅長品牌定位、市場切入點分析與消費者行為洞察。' },
+                { id: 'biz-analyst', label: '商業分析師', prompt: '你擅長數據建模、獲利模式評估與產業趨勢研判。' }
+            ],
+            structures: [
+                { id: 'scqa', label: 'SCQA', prompt: '使用 SCQA 架構。' },
+                { id: 'pyramid', label: '金字塔', prompt: '採取「結論先行」原則。' },
+                { id: 'fab', label: 'FAB', prompt: '使用特性、優勢、利益邏輯。' },
+                { id: 'aida', label: 'AIDA', prompt: '遵循注意、興趣、慾望、行動路徑。' },
+                { id: 'pastor', label: 'PASTOR', prompt: '使用問題、放大、解決、轉化、回應架構。' },
+                { id: 'golden-circle', label: '黃金圈', prompt: '使用 Why-How-What 核心動機架構。' },
+                { id: 'problem-solution', label: '問題解決', prompt: '以「痛點分析 -> 解決 -> 效益」編排。' }
+            ],
+            tones: [
+                { id: 'professional', label: '專業嚴謹', prompt: '文字必須嚴謹、權威且具備邏輯性。' },
+                { id: 'empathy', label: '溫暖共情', prompt: '語氣柔和且具備同理心。' },
+                { id: 'inspiring', label: '啟發鼓舞', prompt: '語氣帶有願景感，旨在激發熱情。' },
+                { id: 'humor', label: '幽默風趣', prompt: '輕鬆幽默，加入適當流行梗。' },
+                { id: 'objective', label: '客觀中立', prompt: '採取第三方中立視角。' },
+                { id: 'provoke', label: '犀利反思', prompt: '大膽質疑現狀，語氣犀利。' },
+                { id: 'epic', label: '史詩劇情感', prompt: '語氣宏大、富有戲劇張力。' }
+            ],
+            audiences: [
+                { id: 'execs', label: '高階決策', prompt: '跳過執行細節，直擊「成本、效益與風險」，只給結論與具體行動方針。' },
+                { id: 'investor', label: '投資方', prompt: '強調商業護城河與獲利模型，用數據說話，展現項目的市場爆發力與回報潛力。' },
+                { id: 'layman', label: '入門新手', prompt: '用「大白話」解釋，嚴禁使用專業術語，多用生活化案例，讓外行人一看就懂。' },
+                { id: 'tech-peer', label: '業內專家', prompt: '深挖底層原理與技術架構細節，拒絕空泛虛詞，以技術參數與邏輯推導為核心。' },
+                { id: 'public', label: '一般大眾', prompt: '結合時事與大眾共鳴點，語氣親民且具備娛樂性，提供即學即用的實用價值。' },
+                { id: 'prospect', label: '潛在客戶', prompt: '精準鎖定客戶現有的痛點困擾，提出具體解方與成功案例，強化信任感並催促行動。' }
+            ],
+            requirements: [
+                { id: 'hook', label: '吸引 Hook', prompt: '開場必須包含一個極具衝擊力的 Hook。' },
+                { id: 'gold-sentence', label: '金句提煉', prompt: '提煉出具備傳播力的短句。' },
+                { id: 'analogy', label: '生活類比', prompt: '使用一個生活化的類比。' },
+                { id: 'data-driven', label: '數據支撐', prompt: '預留「數據支撐」位置。' },
+                { id: 'visual', label: '視覺建議', prompt: '標註建議的視覺呈現方式與構圖細節。' },
+                { id: 'cta', label: '行動 CTA', prompt: '結尾具備明確的行動呼籲。' },
+                { id: 'foreshadow', label: '歷史伏筆', prompt: '埋下伏筆並在後文形成回響。' }
+            ],
+            formats: [
+                { id: 'slide-pages', label: '簡報分頁', prompt: '以「投影片 [編號]：[標題]」呈現。' },
+                { id: 'dual-col', label: '雙欄腳本', prompt: '使用表格呈現，含畫面與旁白稿。' },
+                { id: 'threads', label: '貼文串', prompt: '拆解為適合社群的系列短文格式。' },
+                { id: 'transcript', label: '逐字稿', prompt: '擴展為包含語助詞、轉場語的逐字稿。' },
+                { id: 'table', label: '表格清單', prompt: '使用 Markdown 表格輸出關鍵論點。' },
+                { id: 'documentary', label: '紀錄片腳本', prompt: '專業紀錄片視角撰寫。' }
+            ],
+            wordCounts: [
+                { id: 'short', label: '短篇 500', prompt: '控制在約 500 字。' },
+                { id: 'medium', label: '中篇 1K', prompt: '提供約 1000 字深度。' },
+                { id: 'long', label: '長篇 2K', prompt: '總字數達 2000 字左右。' },
+                { id: 'flexible', label: '不限篇幅', prompt: '自行決定篇幅長短。' },
+                { id: 'framework', label: '完整框架', prompt: '請輸出包含章節標題與核心論點的完整內容框架。' }
+            ],
+            visualStyles: [
+                { id: 'minimal', label: '極簡白', visual: '純白背景、極大留白、現代黑體、極簡圖示、冷灰色調。' },
+                { id: 'premium', label: '商務質感', visual: '深藍背景、燙金配色、襯線標題、高品質寫實配圖、沉穩嚴謹感。' },
+                { id: 'tech', label: '科技現代', visual: '黑色背景、螢光藍綠點綴、等距視角圖（Isometrics）、動態光影效果、未來感。' },
+                { id: 'fresh', label: '自然清新', visual: '米白或淺綠背景、莫蘭迪色系、手繪風格元素、圓潤字體、具備呼吸感的排版。' },
+                { id: 'business', label: '正式專業', visual: '標準白底、企業藍色系、精準數據圖表、大量實景圖片、字級分明且具權威感。' },
+                { id: 'playful', label: '創意活潑', visual: '大膽拼貼配色（如亮黃/亮橘）、普普藝術風格、大量幾何形狀、大字體設計、充滿能量感。' },
+                { id: 'retro', label: '復古故事', visual: '仿舊紙張紋理、暖棕色調、復古膠捲或底片元素、手寫體標題、具備時代記憶感。' }
+            ]
+        };
+
+        // 安全處理 Firebase 初始化
+        let auth = null;
+        try {
+            if (typeof __firebase_config !== 'undefined') {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+            }
+        } catch (error) {
+            console.warn("未偵測到 Firebase 環境變數，將以本機模式 (Local Mode) 運行。");
+        }
+
+        // State 初始化
+        let state = {
+            smartEnabled: false,
+            infographic: null, type: null, role: null,
+            structure: null, tone: null, audience: null,
+            format: null, wordCount: null, visualStyle: null,
+            requirements: [], pageCount: 10
+        };
+        let title = '';
+        let customNotes = '';
+
+        const selectionGroupsContainer = document.getElementById('selection-groups-container');
+        const titleInput = document.getElementById('title-input');
+        const customNotesInput = document.getElementById('custom-notes-input');
+        const promptOutput = document.getElementById('prompt-output');
+        const copyBtn = document.getElementById('copy-btn');
+        const resetAllBtn = document.getElementById('reset-all-btn');
+
+        const buildPrompt = () => {
+            const defaultHeader = "你是一位內容策略專家。請根據以下設定，為我規劃內容架構。";
+            let p = `${state.type?.prompt || defaultHeader}\n\n`;
+            
+            if (state.infographic) p += `${state.infographic.prompt}\n\n`;
+            if (title.trim()) p += `# 主題與目標\n"${title.trim()}"\n\n`;
+            if (state.role) p += `# 角色設定\n${state.role.prompt}\n\n`;
+            if (state.structure) p += `# 邏輯架構\n${state.structure.prompt}\n\n`;
+            
+            let details = "";
+            if (state.tone) details += `- 語氣：${state.tone.prompt}\n`;
+            if (state.audience) details += `- 受眾：${state.audience.prompt}\n`;
+            if (state.wordCount) details += `- 篇幅要求：${state.wordCount.prompt}\n`;
+            if (details) p += `# 策略細節\n${details}\n`;
+            
+            if (state.requirements.length > 0) {
+                p += `# 組成要求\n`;
+                state.requirements.forEach(r => p += `- ${r.prompt}\n`);
+                p += `\n`;
+            }
+
+            if (customNotes.trim()) p += `# 補充細節\n${customNotes.trim()}\n\n`;
+            if (state.format) p += `# 格式規範\n${state.format.prompt}\n\n`;
+            
+            p += `請輸出完整且具備深度洞察的內容框架。\n`;
+
+            if (state.visualStyle) {
+                p += `\n//整體 簡報風格及配色 採用 ${state.visualStyle.label} (${state.visualStyle.visual})`;
+            }
+            
+            promptOutput.textContent = p.trim();
+        };
+
+        const applySmartDefaults = (typeId) => {
+            if (!state.smartEnabled) return;
+            const defaults = TYPE_DEFAULTS[typeId];
+            if (!defaults) return;
+
+            state.role = INITIAL_CONFIG.roles.find(r => r.id === defaults.role) || null;
+            state.structure = INITIAL_CONFIG.structures.find(s => s.id === defaults.structure) || null;
+            state.tone = INITIAL_CONFIG.tones.find(t => t.id === defaults.tone) || null;
+            state.audience = INITIAL_CONFIG.audiences.find(a => a.id === defaults.audience) || null;
+            state.format = INITIAL_CONFIG.formats.find(f => f.id === defaults.format) || null;
+            state.wordCount = INITIAL_CONFIG.wordCounts.find(w => w.id === defaults.wordCount) || null;
+            state.requirements = INITIAL_CONFIG.requirements.filter(r => defaults.requirements.includes(r.id));
+            state.visualStyle = null;
+        };
+
+        const renderSelections = () => {
+            selectionGroupsContainer.innerHTML = '';
+            const groups = [
+                { label: "懶人包快選 (快速結構)", key: "infographics", stateKey: "infographic", icon: "zap" },
+                { label: "0. 內容類型", key: "types", stateKey: "type", showToggle: true, icon: "layout-list" },
+                { label: "1. 角色設定", key: "roles", stateKey: "role", icon: "user" },
+                { label: "2. 邏輯架構", key: "structures", stateKey: "structure", icon: "git-merge" },
+                { label: "3. 語氣風格", key: "tones", stateKey: "tone", icon: "mic" },
+                { label: "4. 目標受眾", key: "audiences", stateKey: "audience", icon: "users" },
+                { label: "5. 加分項目 (可複選)", key: "requirements", stateKey: "requirements", isMulti: true, icon: "plus-circle" },
+                { label: "6. 限定輸出格式", key: "formats", stateKey: "format", icon: "file-text" },
+                { label: "7. 文字數量限制", key: "wordCounts", stateKey: "wordCount", icon: "type" },
+                { label: "8. 簡報風格及配色", key: "visualStyles", stateKey: "visualStyle", icon: "palette" }
+            ];
+
+            groups.forEach(group => {
+                const groupHeader = document.createElement('div');
+                groupHeader.className = 'flex items-center justify-between mb-2.5';
+                
+                const labelContainer = document.createElement('h3');
+                labelContainer.className = 'text-[11pt] font-bold text-slate-500 uppercase tracking-widest leading-none flex items-center gap-2';
+                labelContainer.innerHTML = `<i data-lucide="${group.icon}" class="w-4 h-4 text-indigo-400"></i> ${group.label}`;
+                groupHeader.appendChild(labelContainer);
+
+                if (group.showToggle) {
+                    const toggleLabel = document.createElement('label');
+                    toggleLabel.className = 'smart-toggle text-[11pt] bg-indigo-50 px-2 py-1 rounded-md border border-indigo-100';
+                    toggleLabel.innerHTML = `<input type="checkbox" ${state.smartEnabled ? 'checked' : ''}> <i data-lucide="sparkles" class="w-3 h-3"></i> 啟用智慧建議`;
+                    toggleLabel.querySelector('input').onchange = (e) => {
+                        state.smartEnabled = e.target.checked;
+                    };
+                    groupHeader.appendChild(toggleLabel);
+                }
+
+                const grid = document.createElement('div');
+                grid.className = 'flex flex-wrap gap-2 mb-4 items-center';
+
+                INITIAL_CONFIG[group.key].forEach(opt => {
+                    let isActive = group.isMulti ? state.requirements.some(r => r.id === opt.id) : state[group.stateKey]?.id === opt.id;
+                    const btn = document.createElement('button');
+                    btn.className = `selection-btn rounded-lg border transition-all ${isActive ? 'active shadow-sm scale-[1.02]' : ''}`;
+                    btn.textContent = opt.label;
+                    btn.onclick = () => {
+                        if (group.key === "types") {
+                            if (state.type?.id === opt.id) state.type = null;
+                            else { state.type = opt; applySmartDefaults(opt.id); }
+                        } else if (group.isMulti) {
+                            const idx = state.requirements.findIndex(r => r.id === opt.id);
+                            if (idx > -1) state.requirements.splice(idx, 1);
+                            else state.requirements.push(opt);
+                        } else {
+                            state[group.stateKey] = state[group.stateKey]?.id === opt.id ? null : opt;
+                        }
+                        renderSelections();
+                        buildPrompt();
+                    };
+                    grid.appendChild(btn);
+                });
+
+                if (group.key === "infographics") {
+                    const clearBtn = document.createElement('button');
+                    clearBtn.className = `selection-btn rounded-lg border clear-btn transition-all active:scale-95 ml-auto flex items-center gap-1`;
+                    clearBtn.innerHTML = `<i data-lucide="trash-2" class="w-4 h-4"></i> <span>清除選取</span>`;
+                    clearBtn.onclick = () => {
+                        state = {
+                            ...state,
+                            infographic: null, type: null, role: null,
+                            structure: null, tone: null, audience: null,
+                            format: null, wordCount: null, visualStyle: null,
+                            requirements: [], pageCount: 10
+                        };
+                        titleInput.value = '';
+                        customNotesInput.value = '';
+                        title = '';
+                        customNotes = '';
+                        renderSelections();
+                        buildPrompt();
+                    };
+                    grid.appendChild(clearBtn);
+                }
+
+                const groupEl = document.createElement('div');
+                groupEl.appendChild(groupHeader);
+                groupEl.appendChild(grid);
+                selectionGroupsContainer.appendChild(groupEl);
+            });
+            lucide.createIcons();
+        };
+
+        titleInput.oninput = (e) => { title = e.target.value; buildPrompt(); };
+        customNotesInput.oninput = (e) => { customNotes = e.target.value; buildPrompt(); };
+        
+        copyBtn.onclick = () => {
+            const el = document.createElement('textarea');
+            el.value = promptOutput.textContent;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            const originalHTML = copyBtn.innerHTML;
+            copyBtn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> <span>COPIED!</span>`;
+            lucide.createIcons();
+            copyBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-500');
+            copyBtn.classList.add('bg-green-600', 'hover:bg-green-500');
+            
+            setTimeout(() => {
+                copyBtn.innerHTML = originalHTML;
+                lucide.createIcons();
+                copyBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
+                copyBtn.classList.remove('bg-green-600', 'hover:bg-green-500');
+            }, 2000);
+        };
+        
+        resetAllBtn.onclick = () => { if(confirm("確定要重置所有設定嗎？")) location.reload(); };
+
+        // 僅在桌面版生效的 Resizer 邏輯
+        const resizer = document.getElementById('resizer');
+        const leftPanel = document.getElementById('left-panel');
+        const container = document.getElementById('container');
+        let isResizing = false;
+        
+        resizer.onmousedown = () => { 
+            if (window.innerWidth >= 768) { // 僅在 md(768px) 以上啟用拖拉
+                isResizing = true; 
+                document.body.style.cursor = 'col-resize'; 
+                resizer.classList.add('resizing');
+            }
+        };
+        
+        document.onmousemove = (e) => {
+            if (!isResizing) return;
+            const rect = container.getBoundingClientRect();
+            let newWidth = ((e.clientX - rect.left) / rect.width) * 100;
+            if (newWidth >= 20 && newWidth <= 80) {
+                leftPanel.style.flexBasis = `${newWidth}%`;
+            }
+        };
+        
+        document.onmouseup = () => { 
+            isResizing = false; 
+            document.body.style.cursor = 'default';
+            resizer.classList.remove('resizing'); 
+        };
+
+        const init = async () => {
+            if (auth) {
+                await signInAnonymously(auth);
+                onAuthStateChanged(auth, (u) => {
+                    renderSelections();
+                    buildPrompt();
+                    lucide.createIcons();
+                });
+            } else {
+                renderSelections();
+                buildPrompt();
+                lucide.createIcons();
+            }
+        };
+        init();
+    </script>
+</body>
+</html>

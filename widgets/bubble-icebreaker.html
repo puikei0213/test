@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>破冰波波池 | 配記</title>
+    <style>
+        :root {
+            /* 歡樂明亮主題配色 */
+            --bg-gradient: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+            --primary: #0066FF;
+            --success: #34C759;
+            --danger: #FF3B30;
+            --warning: #FBBF24;
+            --purple: #AF52DE;
+            --glass-light: rgba(255, 255, 255, 0.6);
+            --glass-border-light: rgba(255, 255, 255, 0.8);
+            --text-dark: #1e293b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-dark);
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            position: relative;
+        }
+
+        /* 懸浮導航列 (明亮毛玻璃風格) */
+        .top-nav-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .nav-btn {
+            pointer-events: auto;
+            background: var(--glass-light);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border-light);
+            color: var(--text-dark);
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: clamp(14px, 4vw, 16px);
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        /* 遊戲區域 */
+        #pool-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 氣泡樣式與動畫 */
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: inset -10px -10px 20px rgba(0,0,0,0.1), 0 10px 20px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s;
+            animation: floatUp linear infinite;
+        }
+
+        .bubble::after {
+            content: '';
+            position: absolute;
+            top: 15%;
+            left: 20%;
+            width: 25%;
+            height: 25%;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.6);
+            filter: blur(2px);
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) scale(1) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-20vh) scale(1.2) rotate(360deg); opacity: 0; }
+        }
+
+        .pop-anim {
+            animation: popOut 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+        }
+
+        @keyframes popOut {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.4); opacity: 0.8; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        /* 問題展示板 (Overlay) */
+        #question-board {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .question-card {
+            background: white;
+            padding: clamp(30px, 8vw, 50px);
+            border-radius: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+            transform: translateY(30px) scale(0.9);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #question-board.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        #question-board.show .question-card {
+            transform: translateY(0) scale(1);
+        }
+
+        .emoji-header {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .question-text {
+            font-size: clamp(1.5rem, 6vw, 2.2rem);
+            font-weight: 800;
+            color: var(--text-dark);
+            margin-bottom: 30px;
+            line-height: 1.4;
+        }
+
+        .btn-continue {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            box-shadow: 0 10px 20px rgba(0, 102, 255, 0.3);
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .btn-continue:active {
+            transform: scale(0.95);
+            background: #0052cc;
+        }
+
+        /* 說明書 Modal (白底黑字) */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.95);
+            color: var(--text-dark);
+            padding: clamp(20px, 5vw, 40px);
+            border-radius: 24px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            transform: translateY(20px);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .modal-overlay.show .modal-content { transform: translateY(0); }
+
+        .modal-content h2 { color: var(--primary); margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        .modal-content p { line-height: 1.6; margin-bottom: 10px; font-weight: 500; }
+        .modal-content ul { padding-left: 20px; line-height: 1.6; }
+        .modal-content li { margin-bottom: 8px; }
+        
+        .close-btn {
+            background: var(--text-dark);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            width: 100%;
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-top: 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .close-btn:active { transform: scale(0.98); }
+
+    </style>
+</head>
+<body>
+
+    <div class="top-nav-layer">
+        <a href="../index.html" class="nav-btn">← 首頁</a>
+        <button class="nav-btn" onclick="toggleModal(true)">ℹ️ 說明書</button>
+    </div>
+
+    <div id="pool-container"></div>
+
+    <div id="question-board">
+        <div class="question-card">
+            <div class="emoji-header" id="q-emoji">🤔</div>
+            <div class="question-text" id="q-text">準備好破冰了嗎？</div>
+            <button class="btn-continue" onclick="resumeGame()">✨ 繼續戳氣泡</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal">
+        <div class="modal-content">
+            <h2>ℹ️ 工具說明書</h2>
+            <p><strong>社福應用場景：</strong></p>
+            <ul>
+                <li>🎈 <strong>兒童/青年小組：</strong> 作為首節小組的熱身破冰，降低防備心，增加趣味互動。</li>
+                <li>👨‍👩‍👧 <strong>家庭活動：</strong> 促進親子間的輕鬆對話與互相了解。</li>
+                <li>🤝 <strong>義工培訓：</strong> 快速打破隔膜，建立團隊默契。</li>
+            </ul>
+            <hr style="margin: 15px 0; border: 0; border-top: 2px dashed #e2e8f0;">
+            <p><strong>💡 玩法：</strong> 點擊螢幕上飄浮的任何一顆彩色氣泡，戳破後會隨機彈出一個破冰問題或小任務！</p>
+            <button class="close-btn" onclick="toggleModal(false)">開始玩樂！</button>
+        </div>
+    </div>
+
+    <script>
+        const container = document.getElementById('pool-container');
+        const questionBoard = document.getElementById('question-board');
+        const qText = document.getElementById('q-text');
+        const qEmoji = document.getElementById('q-emoji');
+        const modal = document.getElementById('modal');
+        let bubbleInterval;
+
+        // 豐富的破冰問題庫 (附帶對應 Emoji)
+        const questions = [
+            { text: "如果你擁有一種超能力，你會選什麼？", emoji: "🦸‍♂️" },
+            { text: "分享一件你本週遇到最開心的小事！", emoji: "😊" },
+            { text: "做一個你最拿手的搞笑鬼臉！", emoji: "🤪" },
+            { text: "說出你最喜歡吃的一道菜/零食", emoji: "🍕" },
+            { text: "如果你是一隻動物，你覺得自己是什麼？", emoji: "🦁" },
+            { text: "分享一個你不為人知的小秘密", emoji: "🤫" },
+            { text: "如果現在可以馬上飛去旅行，你想去哪裡？", emoji: "✈️" },
+            { text: "說出在座其中一位參加者的一個優點", emoji: "✨" },
+            { text: "模仿一種動物的叫聲或動作", emoji: "🐒" },
+            { text: "你最害怕的東西是什麼？", emoji: "👻" },
+            { text: "分享你最喜歡的一首歌或電影", emoji: "🎬" },
+            { text: "用三個詞語形容一下現在的心情", emoji: "💬" }
+        ];
+
+        const colors = [
+            'linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%)', // 粉紅
+            'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)', // 紫色
+            'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)', // 青綠
+            'linear-gradient(135deg, #fccb90 0%, #d57eeb 100%)', // 橙紫
+            'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)', // 淺藍
+            'linear-gradient(135deg, #f6d365 0%, #fda085 100%)'  // 亮黃
+        ];
+
+        // 預防 iOS 雙擊縮放及手勢干擾
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
+
+        function toggleModal(show) {
+            if (show) modal.classList.add('show');
+            else modal.classList.remove('show');
+        }
+
+        function createBubble() {
+            // 如果問題板正在顯示，暫停生成氣泡
+            if(questionBoard.classList.contains('show')) return;
+
+            const bubble = document.createElement('div');
+            bubble.classList.add('bubble');
+            
+            // 隨機大小、位置、顏色、速度
+            const size = Math.random() * 60 + 60; // 60px - 120px
+            const left = Math.random() * (window.innerWidth - size);
+            const duration = Math.random() * 4 + 4; // 4s - 8s 飄浮時間
+            const color = colors[Math.floor(Math.random() * colors.length)];
+
+            bubble.style.width = `${size}px`;
+            bubble.style.height = `${size}px`;
+            bubble.style.left = `${left}px`;
+            bubble.style.background = color;
+            bubble.style.animationDuration = `${duration}s`;
+
+            // 綁定點擊與觸控 (消除延遲)
+            const popHandler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                popBubble(bubble);
+            };
+            bubble.ontouchstart = popHandler;
+            bubble.onmousedown = (e) => { if(e.button === 0) popHandler(e); };
+
+            container.appendChild(bubble);
+
+            // 動畫結束後自動移除 DOM
+            setTimeout(() => {
+                if (bubble.parentNode) bubble.remove();
+            }, duration * 1000);
+        }
+
+        function popBubble(bubble) {
+            // 震動回饋 (Android 支援)
+            if (navigator.vibrate) navigator.vibrate(20);
+            
+            // 移除原本動畫，加入破裂動畫
+            bubble.style.animation = 'none'; 
+            void bubble.offsetWidth; // 觸發重繪
+            bubble.classList.add('pop-anim');
+            
+            // 隨機抽取問題
+            const randomQ = questions[Math.floor(Math.random() * questions.length)];
+            qText.innerText = randomQ.text;
+            qEmoji.innerText = randomQ.emoji;
+
+            // 延遲顯示問題板，讓破裂動畫播完
+            setTimeout(() => {
+                showQuestion();
+                bubble.remove();
+            }, 200);
+        }
+
+        function showQuestion() {
+            questionBoard.classList.add('show');
+        }
+
+        function resumeGame() {
+            questionBoard.classList.remove('show');
+            // 清理場上太舊的氣泡
+            container.innerHTML = '';
+        }
+
+        // 啟動遊戲引擎
+        function startGame() {
+            // 每 800ms 生成一顆氣泡
+            bubbleInterval = setInterval(createBubble, 800);
+            // 初始化生成幾顆
+            for(let i=0; i<4; i++) setTimeout(createBubble, i*200);
+        }
+
+        // 載入完成即開始
+        window.onload = startGame;
+
+    </script>
+</body>
+</html>

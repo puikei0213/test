@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>煩惱碎紙機 | 配記 Pui-Kei</title>
+    <style>
+        :root {
+            --bg-color: #2b303a; /* 沈穩深灰底色 */
+            --machine-color: #3f4756;
+            --slot-color: #1a1d24;
+            --paper-color: #fdfbf7;
+            --danger: #ef4444;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --text-light: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-light);
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* 防止碎紙掉落時出現捲軸 */
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* 統一懸浮導航列 */
+        .top-nav {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 50px;
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .nav-btn:active { transform: scale(0.95); }
+
+        /* 工作區域 */
+        .workspace {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            position: relative;
+            padding-bottom: 50px;
+        }
+
+        /* 紙張與輸入框 */
+        .paper-container {
+            position: absolute;
+            bottom: 220px; /* 碎紙機上方 */
+            width: clamp(280px, 80vw, 400px);
+            height: 300px;
+            z-index: 10;
+            transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .paper {
+            width: 100%;
+            height: 100%;
+            background-color: var(--paper-color);
+            border-radius: 4px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            padding: 30px;
+            position: relative;
+            background-image: repeating-linear-gradient(transparent, transparent 31px, #cbd5e1 31px, #cbd5e1 32px);
+        }
+
+        .paper textarea {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            resize: none;
+            font-size: 1.2rem;
+            line-height: 32px; /* 對齊橫線 */
+            color: #334155;
+            outline: none;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+        }
+
+        .paper textarea::placeholder { color: #94a3b8; font-style: italic; }
+
+        /* 碎紙機 UI */
+        .shredder-machine {
+            width: clamp(300px, 90vw, 450px);
+            height: 180px;
+            background: linear-gradient(145deg, #4a5465, #353b48);
+            border-radius: 20px 20px 10px 10px;
+            position: relative;
+            z-index: 20;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.4), inset 0 2px 5px rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+        }
+
+        .shredder-slot {
+            width: 80%;
+            height: 12px;
+            background-color: var(--slot-color);
+            border-radius: 10px;
+            box-shadow: inset 0 5px 10px rgba(0,0,0,0.8);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 碎紙條動畫層 (在碎紙機後方/下方) */
+        .strips-container {
+            position: absolute;
+            bottom: 50px;
+            width: clamp(280px, 80vw, 400px);
+            height: 170px;
+            z-index: 5;
+            display: flex;
+            justify-content: space-between;
+            overflow: visible;
+        }
+
+        .strip {
+            width: calc(100% / 15);
+            height: 100%;
+            background-color: var(--paper-color);
+            transform-origin: top;
+            transform: scaleY(0);
+            box-shadow: inset 1px 0 2px rgba(0,0,0,0.05);
+            border-right: 1px dashed rgba(0,0,0,0.1);
+        }
+
+        @keyframes shred-fall {
+            0% { transform: scaleY(0) translateY(0); opacity: 1; }
+            50% { transform: scaleY(1) translateY(0); opacity: 1; }
+            100% { transform: scaleY(1) translateY(200px) rotateZ(var(--rot)); opacity: 0; }
+        }
+
+        /* 按鈕與狀態 */
+        .btn-shred {
+            margin-top: 40px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .btn-shred:active { transform: translateY(2px); box-shadow: 0 2px 5px rgba(239, 68, 68, 0.4); }
+        .btn-shred:disabled { background: #64748b; cursor: not-allowed; box-shadow: none; opacity: 0.5; }
+
+        .status-msg {
+            position: absolute;
+            top: 40%;
+            font-size: 1.5rem;
+            color: #4ade80;
+            opacity: 0;
+            transition: opacity 0.5s;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        /* 說明書 Modal */
+        .modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px;
+        }
+        .modal-content {
+            background: #1e293b; color: white; padding: 30px; border-radius: 20px; max-width: 450px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .close-btn { background: white; color: black; border: none; padding: 12px; width: 100%; border-radius: 10px; margin-top: 20px; font-weight: bold; cursor:pointer;}
+    </style>
+</head>
+<body>
+
+    <div class="top-nav">
+        <a href="../index.html" class="nav-btn">← 首頁</a>
+        <button class="nav-btn" onclick="document.getElementById('modal').style.display='flex'">ℹ️ 說明書</button>
+    </div>
+
+    <div class="workspace">
+        <div class="status-msg" id="status-msg">煩惱已粉碎，深呼吸 🌬️</div>
+
+        <div class="paper-container" id="paper">
+            <div class="paper">
+                <textarea id="worry-input" placeholder="寫低困擾緊你嘅事、情緒或者人，然後交俾碎紙機..."></textarea>
+            </div>
+        </div>
+
+        <div class="strips-container" id="strips-container">
+            </div>
+
+        <div class="shredder-machine">
+            <div class="shredder-slot"></div>
+            <button class="btn-shred" id="shred-btn" onclick="activateShredder()">粉碎煩惱</button>
+        </div>
+    </div>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <h2 style="color: #60a5fa; margin-bottom: 15px;">🗑️ 煩惱碎紙機說明</h2>
+            <p><strong>完全不同於遊戲的應用機制：</strong></p>
+            <ul style="margin: 15px 0; padding-left: 20px; line-height: 1.6; color:#cbd5e1;">
+                <li><strong>心理外化法 (Externalization)：</strong> 將無形嘅壓力化為具體文字，脫離自身。</li>
+                <li><strong>儀式感轉化：</strong> 透過視覺上嘅「毀滅」，暗示大腦放低執著，特別適合青少年輔導或 SEN 學童的情緒出口。</li>
+                <li><strong>私隱保證：</strong> 所有輸入只會喺本機瀏覽器運作，唔會上傳，碎完即消散。</li>
+            </ul>
+            <button class="close-btn" onclick="document.getElementById('modal').style.display='none'">開始清理</button>
+        </div>
+    </div>
+
+    <script>
+        const textarea = document.getElementById('worry-input');
+        const shredBtn = document.getElementById('shred-btn');
+        const paper = document.getElementById('paper');
+        const stripsContainer = document.getElementById('strips-container');
+        const statusMsg = document.getElementById('status-msg');
+
+        // 監聽輸入，冇字唔俾碎
+        textarea.addEventListener('input', () => {
+            if(textarea.value.trim().length > 0) {
+                shredBtn.disabled = false;
+            } else {
+                shredBtn.disabled = true;
+            }
+        });
+
+        // 初始化：預設停用按鈕
+        shredBtn.disabled = true;
+
+        // 生成 15 條碎紙條
+        for (let i = 0; i < 15; i++) {
+            const strip = document.createElement('div');
+            strip.className = 'strip';
+            // 隨機設定每條紙跌落嘅旋轉角度，營造真實感
+            const rot = (Math.random() - 0.5) * 30; // -15deg to 15deg
+            strip.style.setProperty('--rot', `${rot}deg`);
+            stripsContainer.appendChild(strip);
+        }
+
+        function activateShredder() {
+            if(textarea.value.trim().length === 0) return;
+
+            // 1. 鎖定介面
+            textarea.disabled = true;
+            shredBtn.disabled = true;
+            shredBtn.innerText = "粉碎中...";
+            
+            if (navigator.vibrate) navigator.vibrate([100, 100, 100, 100, 200]); // 模擬機器震動
+
+            // 2. 紙張滑入碎紙機
+            paper.style.transform = "translateY(250px)";
+            
+            // 3. 同步觸發碎紙條跌落動畫
+            setTimeout(() => {
+                const strips = document.querySelectorAll('.strip');
+                strips.forEach((strip, index) => {
+                    // 稍微錯開每條紙嘅動畫時間，睇落自然啲
+                    strip.style.animation = `shred-fall 2s cubic-bezier(0.4, 0, 1, 1) ${index * 0.05}s forwards`;
+                });
+            }, 600); // 等待紙張滑入一半先開始出紙條
+
+            // 4. 重置與顯示成功訊息
+            setTimeout(() => {
+                // 隱藏舊紙張
+                paper.style.opacity = "0";
+                
+                // 顯示安慰字句
+                statusMsg.style.opacity = "1";
+
+                // 3秒後完全還原介面，準備下一次
+                setTimeout(() => {
+                    resetMachine();
+                }, 3000);
+
+            }, 2500);
+        }
+
+        function resetMachine() {
+            // 還原輸入框同紙張
+            textarea.value = "";
+            textarea.disabled = false;
+            paper.style.transition = "none"; // 熄動畫瞬間彈返上去
+            paper.style.transform = "translateY(0)";
+            
+            // 強制重繪
+            void paper.offsetWidth;
+            
+            paper.style.transition = "transform 1.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s";
+            paper.style.opacity = "1";
+
+            // 還原碎紙條
+            const strips = document.querySelectorAll('.strip');
+            strips.forEach(strip => {
+                strip.style.animation = "none"; // 移除動畫
+            });
+
+            // 還原按鈕同文字
+            shredBtn.innerText = "粉碎煩惱";
+            statusMsg.style.opacity = "0";
+        }
+    </script>
+</body>
+</html>

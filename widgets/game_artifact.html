@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數字密碼邏輯推理謎題</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="/components.js" defer></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8FAFC;
+            color: #1E293B;
+        }
+        .puzzle-card {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+        .clue-box {
+            background-color: #F1F5F9;
+            border-left: 5px solid #0066FF;
+            border-radius: 0.5rem;
+        }
+        .digit-input {
+            width: 3.5rem;
+            height: 4.5rem;
+            font-size: 2.5rem;
+            text-align: center;
+            border: 2px solid #E2E8F0;
+            border-radius: 0.75rem;
+            outline: none;
+            transition: all 0.2s;
+            color: #0066FF;
+        }
+        .digit-input:focus {
+            border-color: #0066FF;
+            box-shadow: 0 0 0 4px rgba(0, 102, 255, 0.15);
+        }
+        /* 隱藏數字輸入框的上下箭頭 */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* 👇 解決說明書按鈕無反應的問題 */
+        .modal-overlay.show { 
+            display: flex !important; 
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 pt-24">
+
+    <!-- 召喚頂部導航列與說明書彈窗 -->
+    <widget-nav></widget-nav>
+    <widget-modal>
+        <p><strong>應用場景：</strong></p>
+        <p>1. <strong>邏輯與認知訓練：</strong> 訓練大腦演繹與推理能力，鍛鍊短期記憶與排除法。<br>
+           2. <strong>破冰解難：</strong> 適合青年或成人在小組初期作熱身遊戲，帶動討論氣氛。<br>
+           3. <strong>專注力練習：</strong> 透過分析數字線索，提升參加者對細節的敏銳度。</p>
+    </widget-modal>
+
+    <!-- 👇 修正了寬度限制，改為 max-w-3xl (適合 iPad 與電腦) -->
+    <div class="max-w-3xl w-full puzzle-card p-6 md:p-10">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-3 flex justify-center items-center gap-2">
+                <span class="text-4xl">🧠</span> 數字密碼推理
+            </h1>
+            <p class="text-gray-500">根據已知條件，推斷出正確的 3 位數密碼（數字不重複）。</p>
+        </div>
+
+        <div class="mb-8 flex justify-center items-center gap-4 text-2xl font-semibold bg-blue-50 py-5 rounded-2xl border border-blue-100">
+            <span class="text-slate-700">🔒 密碼：</span>
+            <div class="flex gap-3">
+                <input type="text" id="guess-1" class="digit-input font-bold" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+                <input type="text" id="guess-2" class="digit-input font-bold" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+                <input type="text" id="guess-3" class="digit-input font-bold" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+            </div>
+        </div>
+
+        <!-- 👇 線索區塊改為 Grid 雙欄排版 -->
+        <div id="clues-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 fade-in">
+            <div class="text-center text-gray-500 py-4 md:col-span-2">正在生成謎題...</div>
+        </div>
+
+        <!-- 👇 按鈕區塊微調，大螢幕左右並排 -->
+        <div class="flex flex-col md:flex-row gap-4">
+            <button id="btn-submit" class="w-full md:w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl transition duration-200 shadow-lg shadow-blue-200 text-lg">
+                提交答案
+            </button>
+            <div class="flex w-full md:w-1/2 gap-4">
+                <button id="btn-hint" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-4 px-4 rounded-xl transition duration-200">
+                    看解答
+                </button>
+                <button id="btn-new" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-4 rounded-xl transition duration-200 shadow-lg shadow-green-200">
+                    新題目
+                </button>
+            </div>
+        </div>
+
+        <div id="message-area" class="mt-6 hidden rounded-xl p-5 text-center font-medium text-lg fade-in"></div>
+        <div id="explanation-area" class="mt-6 hidden bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-sm md:text-base text-gray-700 fade-in"></div>
+    </div>
+
+    <script>
+        // 遊戲狀態
+        let currentSecret = [];
+        let currentClues = [];
+        let isSolved = false;
+
+        const inputs = [
+            document.getElementById('guess-1'),
+            document.getElementById('guess-2'),
+            document.getElementById('guess-3')
+        ];
+        const cluesContainer = document.getElementById('clues-container');
+        const btnSubmit = document.getElementById('btn-submit');
+        const btnHint = document.getElementById('btn-hint');
+        const btnNew = document.getElementById('btn-new');
+        const messageArea = document.getElementById('message-area');
+        const explanationArea = document.getElementById('explanation-area');
+
+        function generateSecret() {
+            const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+            for (let i = digits.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [digits[i], digits[j]] = [digits[j], digits[i]];
+            }
+            return digits.slice(0, 3);
+        }
+
+        function evaluateGuess(guess, target) {
+            let a = 0; 
+            let b = 0; 
+            for (let i = 0; i < 3; i++) {
+                if (guess[i] === target[i]) {
+                    a++;
+                } else if (target.includes(guess[i])) {
+                    b++;
+                }
+            }
+            return { a, b };
+        }
+
+// 1. 確保生成的猜測數字絕對不重複 (防誤導)
+        function generateRandomGuess() {
+            const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+            for (let i = digits.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [digits[i], digits[j]] = [digits[j], digits[i]];
+            }
+            return digits.slice(0, 3);
+        }
+
+        // 2. 增加更多線索種類，提升隨機性與難度
+        function getClueDescription(a, b) {
+            if (a === 0 && b === 0) return "號碼全錯";
+            if (a === 1 && b === 0) return "1 個號碼正確，且位置也對";
+            if (a === 0 && b === 1) return "1 個號碼正確，但位置不對";
+            if (a === 0 && b === 2) return "2 個號碼正確，但位置全不對";
+            if (a === 1 && b === 1) return "2 個號碼正確，但只有 1 個位置對";
+            if (a === 2 && b === 0) return "2 個號碼正確，且位置都對";
+            if (a === 0 && b === 3) return "3 個號碼正確，但位置全不對"; 
+            if (a === 1 && b === 2) return "3 個號碼正確，但只有 1 個位置對";
+            return null; 
+        }
+
+        // 3. 全新難度審查機制 (拒絕冗餘線索)
+        function createPuzzle() {
+            currentSecret = generateSecret();
+            let attempts = 0;
+            const maxAttempts = 3000;
+
+            while (attempts < maxAttempts) {
+                attempts++;
+                let tempClues = [];
+                const numClues = 4;
+                
+                for (let i = 0; i < numClues; i++) {
+                    let guess;
+                    let result;
+                    let desc;
+                    let tries = 0;
+                    
+                    do {
+                        guess = generateRandomGuess();
+                        result = evaluateGuess(guess, currentSecret);
+                        desc = getClueDescription(result.a, result.b);
+                        tries++;
+                    } while ((!desc || result.a === 3) && tries < 50);
+
+                    if (desc) {
+                        tempClues.push({ guess: guess, desc: desc, a: result.a, b: result.b });
+                    }
+                }
+
+                if (tempClues.length < 4) continue;
+
+                // 條件一：必須能推導出「唯一解」
+                if (hasUniqueSolution(tempClues, currentSecret)) {
+                    
+                    // 條件二：難度保證 (冗餘檢查) - 解決你問題的核心！
+                    // 檢查是否任挑 3 個線索就能解開？如果是，代表有廢話線索，題目太簡單，必須重刷！
+                    let isTooEasy = false;
+                    for (let i = 0; i < numClues; i++) {
+                        let subset = tempClues.filter((_, index) => index !== i);
+                        if (hasUniqueSolution(subset, currentSecret)) {
+                            isTooEasy = true;
+                            break;
+                        }
+                    }
+
+                    if (!isTooEasy) {
+                        // 條件三：打亂線索顯示順序，避免規律
+                        currentClues = tempClues.sort(() => Math.random() - 0.5);
+                        renderClues();
+                        return;
+                    }
+                }
+            }
+            // 防呆：如果運氣極差找不到完美題目，再試一次
+            createPuzzle();
+        }
+
+        function hasUniqueSolution(clues, targetSecret) {
+            let possibleSolutions = 0;
+            
+            for (let i = 0; i <= 9; i++) {
+                for (let j = 0; j <= 9; j++) {
+                    if (j === i) continue;
+                    for (let k = 0; k <= 9; k++) {
+                        if (k === i || k === j) continue;
+                        
+                        const testGuess = [i, j, k];
+                        let isValid = true;
+                        
+                        for (const clue of clues) {
+                            const res = evaluateGuess(clue.guess, testGuess);
+                            if (res.a !== clue.a || res.b !== clue.b) {
+                                isValid = false;
+                                break;
+                            }
+                        }
+                        
+                        if (isValid) {
+                            possibleSolutions++;
+                            if (possibleSolutions > 1) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+            return possibleSolutions === 1;
+        }
+
+        // 👇 重新設計了線索的顯示樣式，更適合雙欄排版
+        function renderClues() {
+            cluesContainer.innerHTML = '';
+            currentClues.forEach((clue, index) => {
+                const clueEl = document.createElement('div');
+                clueEl.className = 'clue-box p-4 flex items-center justify-start gap-4 text-sm md:text-base shadow-sm';
+                
+                const guessStr = clue.guess.join(' ');
+                clueEl.innerHTML = `
+                    <span class="font-mono font-bold tracking-widest text-lg bg-white border border-slate-200 px-3 py-1.5 rounded-lg shrink-0 shadow-sm text-slate-700">
+                        ${guessStr}
+                    </span>
+                    <span class="text-slate-600 font-medium">
+                        ${clue.desc}
+                    </span>
+                `;
+                cluesContainer.appendChild(clueEl);
+            });
+            
+            const promptEl = document.createElement('div');
+            promptEl.className = 'text-center text-sm font-semibold text-gray-400 mt-2 italic md:col-span-2';
+            promptEl.textContent = '請告訴我你的答案！如果想放棄，可以隨時點擊查看解答。';
+            cluesContainer.appendChild(promptEl);
+        }
+
+        inputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/[^0-9]/g, '');
+                if (e.target.value.length === 1 && index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                }
+            });
+            
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && e.target.value === '' && index > 0) {
+                    inputs[index - 1].focus();
+                }
+            });
+        });
+
+        btnSubmit.addEventListener('click', () => {
+            if (isSolved) return;
+            
+            const userGuess = inputs.map(input => parseInt(input.value, 10));
+            
+            if (userGuess.some(isNaN)) {
+                showMessage('請輸入完整的 3 位數密碼！', 'error');
+                return;
+            }
+            
+            const uniqueDigits = new Set(userGuess);
+            if (uniqueDigits.size !== 3) {
+                showMessage('密碼中的數字不能重複喔！', 'error');
+                return;
+            }
+
+            let isCorrect = true;
+            for (let i = 0; i < 3; i++) {
+                if (userGuess[i] !== currentSecret[i]) {
+                    isCorrect = false;
+                    break;
+                }
+            }
+
+            if (isCorrect) {
+                showMessage('🎉 恭喜你！完全正確！密碼已破解！', 'success');
+                isSolved = true;
+                inputs.forEach(input => {
+                    input.disabled = true;
+                    input.classList.add('bg-green-100', 'border-green-500', 'text-green-700');
+                });
+                btnHint.disabled = true;
+                btnHint.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                showMessage('❌ 密碼錯誤，請再仔細推敲線索看看。', 'error');
+                setTimeout(() => {
+                    inputs.forEach(i => i.value = '');
+                    inputs[0].focus();
+                }, 1500);
+            }
+        });
+
+        function showMessage(text, type) {
+            messageArea.textContent = text;
+            messageArea.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700');
+            
+            if (type === 'error') {
+                messageArea.classList.add('bg-red-100', 'text-red-700');
+            } else if (type === 'success') {
+                messageArea.classList.add('bg-green-100', 'text-green-700');
+            }
+            
+            messageArea.classList.remove('fade-in');
+            void messageArea.offsetWidth; 
+            messageArea.classList.add('fade-in');
+        }
+
+        function generateDetailedExplanation(secret, clues) {
+            let html = `<div class="text-left space-y-3">
+                <p class="text-lg font-bold text-gray-800 border-b border-yellow-300 pb-2">🎯 正確密碼是：<span class="text-blue-600 tracking-widest text-xl">${secret.join('')}</span></p>
+                <p class="font-semibold text-gray-800 mt-2">💡 邏輯解析過程 (事後驗證法)：</p>
+                <ul class="list-decimal pl-5 space-y-3 text-gray-700 text-sm">`;
+
+            clues.forEach((clue, index) => {
+                const guess = clue.guess;
+                let exact = [];
+                let wrongPos = [];
+                let absent = [];
+
+                for (let i = 0; i < 3; i++) {
+                    if (guess[i] === secret[i]) {
+                        exact.push(guess[i]);
+                    } else if (secret.includes(guess[i])) {
+                        wrongPos.push(guess[i]);
+                    } else {
+                        absent.push(guess[i]);
+                    }
+                }
+
+                let uniqueWrongPos = [...new Set(wrongPos)];
+                let uniqueAbsent = [...new Set(absent)];
+
+                html += `<li><span class="font-mono font-bold bg-white border border-gray-300 px-1 rounded shadow-sm">[ ${guess.join(' ')} ]</span> <span class="text-gray-500 text-xs">-> ${clue.desc}</span><br>`;
+
+                if (clue.a === 0 && clue.b === 0) {
+                    html += `<span class="text-red-600 font-medium">➜ 關鍵刪去：</span>這代表數字 <strong>${uniqueAbsent.join(', ')}</strong> 都不在密碼中，可全數排除！`;
+                } else {
+                    let analysis = [];
+                    if (exact.length > 0) {
+                        analysis.push(`真正對中的是 <strong class="text-green-600">${exact.join(', ')}</strong> (且在正確位置)`);
+                    }
+                    if (uniqueWrongPos.length > 0) {
+                        analysis.push(`對中的是 <strong class="text-blue-600">${uniqueWrongPos.join(', ')}</strong> (但位置放錯了)`);
+                    }
+                    if (uniqueAbsent.length > 0) {
+                        analysis.push(`其餘數字 <strong>${uniqueAbsent.join(', ')}</strong> 則被排除`);
+                    }
+                    html += `➜ 驗證：${analysis.join('，')}。`;
+                }
+                html += `</li>`;
+            });
+
+            html += `</ul>
+                <div class="mt-4 text-sm text-gray-700 bg-yellow-100 p-3 rounded-xl border border-yellow-200">
+                    📌 <strong>解題思維：</strong>透過「號碼全錯」的線索剔除不可能的數字，剩下的數字再帶入其他線索中。例如當線索說「1個正確且位置對」，而你已經排除了其中兩個數字時，剩下的那一個絕對就是正確位置的密碼！
+                </div>
+            </div>`;
+            return html;
+        }
+
+        btnHint.addEventListener('click', () => {
+            if (isSolved) return;
+            
+            inputs.forEach((input, index) => {
+                input.value = currentSecret[index];
+                input.disabled = true;
+            });
+            isSolved = true;
+            
+            showMessage('已顯示解答。不要灰心，再挑戰一題吧！', 'error');
+            btnHint.disabled = true;
+            btnHint.classList.add('opacity-50', 'cursor-not-allowed');
+            btnSubmit.disabled = true;
+            btnSubmit.classList.add('opacity-50', 'cursor-not-allowed');
+            
+            explanationArea.innerHTML = generateDetailedExplanation(currentSecret, currentClues);
+            explanationArea.classList.remove('hidden');
+        });
+
+        btnNew.addEventListener('click', () => {
+            initGame();
+        });
+
+        function initGame() {
+            isSolved = false;
+            inputs.forEach(input => {
+                input.value = '';
+                input.disabled = false;
+                input.classList.remove('bg-green-100', 'border-green-500', 'text-green-700');
+            });
+            messageArea.classList.add('hidden');
+            explanationArea.classList.add('hidden');
+            
+            btnHint.disabled = false;
+            btnHint.classList.remove('opacity-50', 'cursor-not-allowed');
+            btnSubmit.disabled = false;
+            btnSubmit.classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            cluesContainer.innerHTML = '<div class="text-center text-gray-500 py-4 md:col-span-2">正在努力生成完美謎題...</div>';
+            
+            setTimeout(() => {
+                createPuzzle();
+                inputs[0].focus();
+            }, 50);
+        }
+
+        window.addEventListener('DOMContentLoaded', initGame);
+
+    </script>
+</body>
+</html>

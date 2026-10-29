@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>美孚青年閣預約系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { user-select: none; -webkit-user-select: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes popIn { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .animate-pop { animation: popIn 0.3s ease-out forwards; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* 跑馬燈動畫 */
+        .marquee-container { overflow: hidden; white-space: nowrap; width: 100%; display: flex; align-items: center; }
+        .marquee-content { display: inline-block; animation: marquee 25s linear infinite; padding-left: 100%; }
+        .marquee-content:hover { animation-play-state: paused; }
+        @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
+    </style>
+</head>
+<body class="bg-slate-50 h-[100dvh] flex flex-col font-sans overflow-hidden">
+
+    <!-- 頂部導航列 (優化手機窄螢幕排版) -->
+    <header class="bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shrink-0 z-10">
+        <div class="flex justify-between items-center p-2 sm:p-4">
+            <div class="flex items-center gap-1.5 sm:gap-4 shrink-0 max-w-full">
+                <!-- 官方 Logo -->
+                <div onclick="handleLogoClick()" class="bg-white px-1.5 py-1 sm:px-4 sm:py-2 rounded-xl shadow-sm flex items-center shrink-0 cursor-pointer active:scale-95 transition-transform">
+                    <img src="/icons/mflogo.png" alt="BGCA" class="h-6 sm:h-12 md:h-14 object-contain pointer-events-none">
+                </div>
+                
+                <div class="border-l-2 border-white/30 pl-1.5 sm:pl-4 py-0.5 sm:py-1 shrink-0 flex items-center gap-1.5 sm:gap-4 overflow-hidden">
+                    <div class="shrink-0">
+                        <h1 class="text-sm sm:text-xl md:text-2xl font-bold tracking-widest text-white/95 shadow-sm leading-tight whitespace-nowrap">美孚青年閣</h1>
+                        <p class="text-[9px] sm:text-xs opacity-90 tracking-wider mt-0.5 sm:mt-1 leading-tight whitespace-nowrap">自助預約系統</p>
+                    </div>
+                    <!-- IG / FB 按鈕 -->
+                    <div class="flex gap-1.5 sm:gap-2 border-l border-white/20 pl-1.5 sm:pl-4 ml-0.5 sm:ml-2 shrink-0">
+                        <a href="https://www.instagram.com/bgca_mf" target="_blank" rel="noopener noreferrer" class="w-6 h-6 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/30 flex items-center justify-center transition-all hover:scale-110 shadow-sm border border-white/20 text-white">
+                            <i class="fab fa-instagram text-xs sm:text-xl"></i>
+                        </a>
+                        <a href="https://www.facebook.com/bgca.mf" target="_blank" rel="noopener noreferrer" class="w-6 h-6 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/30 flex items-center justify-center transition-all hover:scale-110 shadow-sm border border-white/20 text-white">
+                            <i class="fab fa-facebook-f text-xs sm:text-xl"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-right hidden md:block pl-4 shrink-0 ml-auto">
+                <div id="clock" class="text-xl font-bold tracking-wider">--:-- --</div>
+                <div id="date" class="text-sm opacity-90">--年--月--日</div>
+            </div>
+        </div>
+
+        <!-- 跑馬燈 (Announcements) -->
+        <div class="bg-[#fdf6e3] text-[#b45b10] text-xs sm:text-sm py-1.5 sm:py-2 px-3 sm:px-4 flex items-center border-y border-[#f7e09e] shadow-sm">
+            <i class="fas fa-bullhorn mr-2 sm:mr-3 text-[#eda74f] animate-pulse shrink-0"></i>
+            <span class="font-bold shrink-0 mr-2 border-r border-[#e8c679] pr-2">最新消息</span>
+            <div class="marquee-container">
+                <span id="announcement-text" class="marquee-content font-medium tracking-wide">
+                    歡迎來到美孚青年閣！如有任何查詢，請聯絡當值職員。 Welcome to Youth Corner!
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要內容區 -->
+    <main class="flex-1 flex flex-col md:flex-row p-3 sm:p-6 gap-4 sm:gap-6 overflow-y-auto md:overflow-hidden relative transition-all duration-500">
+        
+        <!-- 左側：時間表顯示 (加入 min-h-[60vh] 解決手機坍塌問題) -->
+        <section id="schedule-section" class="w-full min-h-[60vh] md:min-h-0 bg-white rounded-2xl shadow-lg p-3 sm:p-6 flex flex-col overflow-hidden border-t-4 border-t-emerald-500 flex-1 transition-all duration-500">
+            <div class="flex justify-between items-center mb-2 sm:mb-3 shrink-0">
+                <h2 class="text-lg sm:text-2xl font-bold text-gray-800 flex items-center"><i class="far fa-calendar-alt mr-2 sm:mr-3 text-emerald-600"></i>預約日期及時段</h2>
+                <div class="flex gap-2 sm:gap-4 text-xs sm:text-sm font-semibold">
+                    <span class="flex items-center gap-1 sm:gap-2 text-emerald-600"><div class="w-3 h-3 rounded-full bg-emerald-500"></div> <span class="hidden sm:inline">可預約</span><span class="sm:hidden">空閒</span></span>
+                    <span class="flex items-center gap-1 sm:gap-2 text-amber-500"><div class="w-3 h-3 rounded-full bg-amber-400"></div> <span class="hidden sm:inline">部份預約</span><span class="sm:hidden">部份</span></span>
+                    <span class="flex items-center gap-1 sm:gap-2 text-slate-400"><div class="w-3 h-3 rounded-full bg-slate-300"></div> <span class="hidden sm:inline">已滿</span><span class="sm:hidden">已滿</span></span>
+                </div>
+            </div>
+
+            <div id="date-selector-container" class="flex gap-2 sm:gap-3 overflow-x-auto custom-scrollbar px-1 sm:px-2 pt-2 pb-4 mb-2 shrink-0 scroll-smooth">
+                <!-- JavaScript 自動生成 -->
+            </div>
+            
+            <div id="schedule-container" class="flex-1 overflow-y-auto no-scrollbar space-y-3 pr-2 pb-2">
+                <!-- JavaScript 生成 -->
+            </div>
+        </section>
+
+        <!-- 右側預設：使用守則資訊板 -->
+        <section id="rules-section" class="w-full min-h-[500px] md:min-h-0 md:w-[420px] bg-slate-50 rounded-2xl shadow-inner flex-col overflow-hidden shrink-0 border border-slate-200 transition-all duration-500 flex">
+            <div class="bg-emerald-600 text-white p-4 text-center font-bold text-lg sm:text-xl tracking-wider shadow-md shrink-0 z-10 relative">
+                <i class="fas fa-clipboard-list mr-2"></i> 青年閣 Rules
+            </div>
+            <div class="p-4 sm:p-5 overflow-y-auto custom-scrollbar flex-1 bg-gradient-to-b from-white to-slate-50">
+                <div class="flex gap-2 mb-5">
+                    <div class="flex-1 bg-indigo-50 border border-indigo-100 rounded-xl p-3 flex flex-col items-center justify-center shadow-sm">
+                        <div class="w-10 h-10 bg-indigo-100 text-indigo-500 rounded-full flex items-center justify-center mb-2"><i class="fas fa-gamepad text-xl"></i></div>
+                        <span class="font-bold text-indigo-800 text-sm">CHILLZONE</span>
+                        <span class="text-[10px] text-indigo-500">桌遊 / 打機 Boardgames</span>
+                    </div>
+                    <div class="flex-1 bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex flex-col items-center justify-center shadow-sm">
+                        <div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-2"><i class="fas fa-bullseye text-xl"></i></div>
+                        <span class="font-bold text-emerald-800 text-sm">桌球 / 康樂棋</span>
+                        <span class="text-[10px] text-emerald-600">Billiards / Carrom</span>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm border-l-4 border-l-sky-500">
+                        <h4 class="font-bold text-gray-800 mb-1 text-sm sm:text-base">1. 準時出席 Be Punctual <i class="fas fa-plane-departure text-sky-400 ml-1"></i></h4>
+                        <p class="text-xs text-gray-500 mb-1">遲到15分鐘將取消資格。取消請早2小時。</p>
+                        <p class="text-[10px] text-gray-400">Late 15+ mins = forfeited. Cancel 2 hrs prior.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm border-l-4 border-l-emerald-500">
+                        <h4 class="font-bold text-gray-800 mb-1 text-sm sm:text-base">2. 愛護物資 Care Equipment <i class="fas fa-billiard text-emerald-500 ml-1"></i></h4>
+                        <p class="text-xs text-gray-500 mb-1">小心使用手掣及用具，損壞請即報。</p>
+                        <p class="text-[10px] text-gray-400">Handle with care. Report damages immediately.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm border-l-4 border-l-amber-500">
+                        <h4 class="font-bold text-gray-800 mb-1 text-sm sm:text-base">3. 保持整潔 Keep it Clean <i class="fas fa-trash-alt text-amber-400 ml-1"></i></h4>
+                        <p class="text-xs text-gray-500 mb-1">自行清理垃圾，結束前5分鐘收拾。</p>
+                        <p class="text-[10px] text-gray-400">Clean up your trash. Pack up 5 mins before end.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm border-l-4 border-l-indigo-500">
+                        <h4 class="font-bold text-gray-800 mb-1 text-sm sm:text-base">4. 互相尊重 Respect Others <i class="fas fa-handshake text-indigo-400 ml-1"></i></h4>
+                        <p class="text-xs text-gray-500 mb-1">保持禮貌，勿大聲喧嘩。聽從職員指示。</p>
+                        <p class="text-[10px] text-gray-400">Be polite. Follow staff instructions.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-100 p-3 text-center border-t border-gray-200 shrink-0">
+                <p class="text-sm font-bold text-emerald-700"><i class="fas fa-user-check mr-1"></i> 預約請聯絡當值職員</p>
+                <p class="text-[10px] text-gray-500 mt-0.5">Please contact staff to book</p>
+            </div>
+        </section>
+
+        <!-- 右側隱藏：預約表單 (職員專用) -->
+        <section id="booking-section" class="hidden w-full min-h-[500px] md:min-h-0 md:w-[420px] bg-white rounded-2xl shadow-lg flex-col border-t-4 border-t-emerald-500 overflow-hidden shrink-0 transition-all duration-500">
+            <div class="p-4 sm:p-6 flex flex-col h-full">
+                <div class="flex justify-between items-center mb-4 sm:mb-6 shrink-0 border-b border-gray-100 pb-4">
+                    <h2 class="text-lg sm:text-xl font-bold text-emerald-700 flex flex-col sm:flex-row sm:items-end gap-1 sm:gap-2">
+                        <span><i class="fas fa-user-shield mr-2"></i>現場預約</span>
+                        <span class="text-[10px] sm:text-xs text-emerald-500/80 font-normal tracking-wider pb-0.5">On-site Booking</span>
+                    </h2>
+                    <button onclick="openStaffChannel()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg font-bold transition-colors border border-slate-200 shadow-sm flex items-center gap-1">
+                        <i class="fas fa-lock"></i> 資料庫 DB
+                    </button>
+                </div>
+                
+                <form id="booking-form" class="flex-1 flex flex-col gap-4 sm:gap-5 overflow-y-auto no-scrollbar pr-2 pb-2">
+                    <input type="hidden" id="selected-time-id" value="">
+
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2 text-xs sm:text-sm tracking-wider">
+                            1. 選擇時段 <span class="text-[10px] sm:text-xs text-gray-400 font-medium ml-1">Select Time Slot</span>
+                        </label>
+                        <div id="selected-time-display" class="w-full p-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 text-center bg-gray-50 flex flex-col items-center justify-center gap-1 transition-all text-sm">
+                            <div><i class="fas fa-hand-pointer mr-1"></i> 請先點選左側可預約時段</div>
+                            <div class="text-xs opacity-70">(Please select a slot on the left)</div>
+                        </div>
+                    </div>
+
+                    <div id="zone-selection-container" class="hidden opacity-0 transition-opacity duration-300">
+                        <label class="block text-gray-700 font-bold mb-2 text-xs sm:text-sm tracking-wider flex justify-between items-end">
+                            <span>2. 選擇空間 <span class="text-[10px] sm:text-xs text-gray-400 font-medium ml-1">Select Zone</span></span>
+                            <span class="text-[10px] text-emerald-600 font-normal"><i class="fas fa-check-double mr-1"></i>支援多選 Multi-select</span>
+                        </label>
+                        <div class="flex gap-2">
+                            <button type="button" id="btn-zone1" onclick="selectZone('zone1')" class="flex-1 py-3 px-2 rounded-xl border border-gray-200 text-gray-400 font-bold transition-all text-center flex flex-col items-center justify-center gap-1 group">
+                                <i class="fas fa-gamepad text-xl mb-1 group-hover:scale-110 transition-transform"></i>
+                                <span class="text-sm leading-none">CHILLZONE</span>
+                                <span class="text-[9px] sm:text-[10px] font-normal leading-tight opacity-80">(桌遊/打機 Boardgames)</span>
+                            </button>
+                            <button type="button" id="btn-zone2" onclick="selectZone('zone2')" class="flex-1 py-3 px-2 rounded-xl border border-gray-200 text-gray-400 font-bold transition-all text-center flex flex-col items-center justify-center gap-1 group">
+                                <i class="fas fa-bullseye text-xl mb-1 group-hover:scale-110 transition-transform"></i>
+                                <span class="text-sm leading-none">桌球 / 康樂棋</span>
+                                <span class="text-[9px] sm:text-[10px] font-normal leading-tight opacity-80">(限一組 1 Group Only)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="form-step-3" class="opacity-50 pointer-events-none transition-opacity duration-300">
+                        <label class="block text-gray-700 font-bold mb-2 text-xs sm:text-sm tracking-wider">
+                            3. 借用人稱呼 <span class="text-[10px] sm:text-xs text-gray-400 font-medium ml-1">Name</span>
+                        </label>
+                        <input type="text" id="user-name" required pattern="[A-Za-z\s]+" title="只限英文字母及空格 English characters only" placeholder="只限英文 English only" class="w-full p-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors">
+                    </div>
+
+                    <div id="form-step-4" class="opacity-50 pointer-events-none transition-opacity duration-300">
+                        <label class="block text-gray-700 font-bold mb-2 text-xs sm:text-sm tracking-wider">
+                            4. 聯絡電話 <span class="text-[10px] sm:text-xs text-gray-400 font-medium ml-1">Phone No.</span>
+                        </label>
+                        <input type="tel" id="user-phone" required pattern="\d{8}" minlength="8" maxlength="8" title="必須輸入 8 位數字" placeholder="8位數字 8-digit numbers" class="w-full p-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors tracking-widest">
+                    </div>
+
+                    <div class="mt-auto pt-4 pb-2">
+                        <button type="submit" id="submit-btn" disabled class="w-full bg-gray-300 text-gray-500 font-bold py-3 sm:py-4 rounded-xl text-base sm:text-lg transition-all duration-300 cursor-not-allowed uppercase tracking-widest shadow-sm flex flex-col items-center justify-center gap-0.5">
+                            <span>確認寫入預約</span>
+                            <span class="text-[10px] sm:text-xs font-normal normal-case opacity-80">Confirm Booking</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <!-- 刪除預約 Modal -->
+    <div id="cancel-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 backdrop-blur-sm px-4">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl border-t-8 border-red-500 animate-pop">
+            <div class="w-14 h-14 sm:w-16 sm:h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-trash-alt text-2xl sm:text-3xl text-red-500"></i>
+            </div>
+            <h3 class="text-lg sm:text-xl font-bold text-gray-800 mb-1 tracking-wider">刪除整段預約</h3>
+            <p class="text-xs text-gray-400 mb-4">Delete Entire Booking</p>
+            
+            <div class="bg-gray-50 p-3 sm:p-4 rounded-xl mb-6 text-left border border-gray-200">
+                <p class="text-xs sm:text-sm text-gray-500 mb-1">時段 Time: <span class="font-bold text-gray-800 ml-2" id="cancel-time"></span></p>
+                <p class="text-xs sm:text-sm text-gray-500 leading-relaxed mt-2 pt-2 border-t border-gray-200">
+                    <i class="fas fa-info-circle text-amber-500 mr-1"></i>
+                    提示: 如只需取消部分空間，請打開資料庫手動修改。<br>
+                    <span class="text-[10px] text-gray-400">(To modify specific zones, please edit via Database directly.)</span>
+                </p>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeCancelModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 sm:py-3 rounded-xl transition-colors flex flex-col items-center justify-center">
+                    <span>取消</span><span class="text-[10px] font-normal">Cancel</span>
+                </button>
+                <button onclick="confirmCancel()" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 sm:py-3 rounded-xl transition-colors shadow-md flex flex-col items-center justify-center">
+                    <span>確認刪除</span><span class="text-[10px] font-normal">Delete</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 條款細則 (T&C) Modal -->
+    <div id="tnc-modal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 backdrop-blur-sm px-4">
+        <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl border-t-8 border-emerald-500 animate-pop overflow-hidden">
+            <div class="p-4 sm:p-6 border-b border-gray-100 flex justify-between items-center shrink-0 bg-white">
+                <h3 class="text-xl sm:text-2xl font-bold text-gray-800 flex items-center"><i class="fas fa-file-contract mr-3 text-emerald-500"></i>確認前須知</h3>
+                <button onclick="closeTncModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <div id="tnc-content" class="p-5 sm:p-8 overflow-y-auto flex-1 text-sm sm:text-base text-gray-700 space-y-6 leading-relaxed custom-scrollbar bg-white">
+                <!-- 中文版 -->
+                <div>
+                    <h4 class="font-bold text-gray-900 text-lg sm:text-xl mb-4">🎮 青年閣使用守則</h4>
+                    <p class="mb-4">歡迎預約青年閣！這裡是屬於大家的放鬆空間（Chill Zone）。為了讓每位 12-24 歲的朋友都能玩得開心，預約前請先閱讀並同意以下「四大守則」：</p>
+                    <ol class="list-decimal pl-5 space-y-4 font-semibold text-gray-800">
+                        <li>準時出席，請勿無故缺席 ✈️
+                            <ul class="list-disc pl-5 mt-1.5 font-normal text-gray-600 text-sm space-y-1">
+                                <li><span class="font-bold">時段保留：</span>預約成功後請準時到達。如果遲到超過 15 分鐘且沒有提前通知，該時段將會開放給現場其他朋友。</li>
+                                <li><span class="font-bold">提前取消：</span>如需取消預約，請至少在 2 小時前於系統取消，切勿浪費名額。</li>
+                            </ul>
+                        </li>
+                        <li>愛護物資，共享快樂 🎱
+                            <ul class="list-disc pl-5 mt-1.5 font-normal text-gray-600 text-sm space-y-1">
+                                <li><span class="font-bold">愛惜裝備：</span>請勿過度用力按壓 PS5 手掣，桌球桿與康樂棋請勿用作嬉戲碰撞。桌遊玩完後請清點好組件並放回原位。</li>
+                                <li><span class="font-bold">主動申報：</span>若發現物資損壞，請立即通知社工，切勿隱瞞，以免影響下一位使用者。</li>
+                            </ul>
+                        </li>
+                        <li>保持整潔，共同維護 🥤
+                            <ul class="list-disc pl-5 mt-1.5 font-normal text-gray-600 text-sm space-y-1">
+                                <li><span class="font-bold">垃圾清理：</span>青年閣歡迎大家帶飲品和小食，但享用後請自覺將垃圾丟進垃圾桶，保持環境乾淨。</li>
+                                <li><span class="font-bold">一起收拾：</span>每節結束前 5 分鐘，請大家一起動手收拾好物資，方便下一節的朋友入座。</li>
+                            </ul>
+                        </li>
+                        <li>互相尊重，和諧相處 🤝
+                            <ul class="list-disc pl-5 mt-1.5 font-normal text-gray-600 text-sm space-y-1">
+                                <li><span class="font-bold">禮貌互動：</span>請保持禮貌，請勿大聲喧嘩、說粗言穢語、打架或欺凌。打機勝負是平常事，最重要是玩得開心！</li>
+                                <li><span class="font-bold">聽從指示：</span>請配合現場社工或職員的指示與安排。</li>
+                            </ul>
+                        </li>
+                    </ol>
+                    <div class="mt-6 p-4 sm:p-5 bg-red-50 border border-red-200 rounded-xl text-red-700 shadow-sm">
+                        <p class="font-bold text-red-800 mb-2"><i class="fas fa-exclamation-triangle mr-2"></i>重要提示：公物價值參考（請愛惜公物 💸）</p>
+                        <p class="text-sm mb-3">若因不當使用而導致故意破壞或遺失公物，必須照價賠償。價值參考如下：</p>
+                        <ul class="list-disc pl-5 text-sm space-y-2">
+                            <li>🎱 <span class="font-bold">桌球（整副）：$12,000</span> （特別注意：桌球若遺失任何一粒，均需整副賠償！）</li>
+                            <li>🎮 <span class="font-bold">PS5 主機及配件：$5,000</span></li>
+                            <li>🪵 <span class="font-bold">康樂棋：$4,000</span></li>
+                            <li>🃏 <span class="font-bold">桌遊（Boardgames）：</span>每副約 $300 - $500 （視乎款式）</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <hr class="border-gray-200 my-8">
+
+                <!-- English -->
+                <div>
+                    <h4 class="font-bold text-gray-900 text-lg sm:text-xl mb-4">🎮 Youth Corner Rules</h4>
+                    <p class="mb-4">Welcome to the Youth Corner! This is a Chill Zone for everyone. To ensure all friends aged 12-24 have a great time, please read and agree to the following 4 Simple Rules before confirming your booking:</p>
+                    <ol class="list-decimal pl-5 space-y-4 font-semibold text-gray-800">
+                        <li>Be Punctual, Don't Be a Ghost ✈️
+                            <ul class="list-disc pl-5 mt-1.5 font-normal text-gray-600 text-sm space-y-1">
+                                <li><span class="font-bold">Booking Retention:</span> Please arrive on time. If you are late for more than 15 minutes without notice, your slot will be released to other users.</li>
+                                <li><span class="font-bold">Cancellation:</span> If you need to cancel, please do so via the system at least 2 hours in advance. Don't waste the slot!</li>
+                            </ul>
+                        </li>
+                        <li>Care for Our Equipment 🎱
+                            <ul class="list-disc pl-5 mt-1.5 font-normal text-gray-600 text-sm space-y-1">
+                                <li><span class="font-bold">Gentle Use:</span> Please handle PS5 controllers with care (don't smash the buttons!). Do not play roughly with pool cues or carrom sticks. Please count all pieces and put boardgames back in place after playing.</li>
+                                <li><span class="font-bold">Report Damage:</span> If you find anything broken, please tell our social workers immediately. Do not hide it!</li>
+                            </ul>
+                        </li>
+                        <li>Keep It Clean and Tidy 🥤
+                            <ul class="list-disc pl-5 mt-1.5 font-normal text-gray-600 text-sm space-y-1">
+                                <li><span class="font-bold">Clean Up:</span> Food and drinks are welcome, but please throw away your trash in the bin to keep the area clean.</li>
+                                <li><span class="font-bold">Pack Up Together:</span> Please spend the last 5 minutes of your session packing up, so the next group can enjoy it.</li>
+                            </ul>
+                        </li>
+                        <li>Respect Each Other (Good Vibes Only) 🤝
+                            <ul class="list-disc pl-5 mt-1.5 font-normal text-gray-600 text-sm space-y-1">
+                                <li><span class="font-bold">Be Polite:</span> No shouting, swearing, fighting, or bullying. Winning or losing a game is secondary—having fun is what matters!</li>
+                                <li><span class="font-bold">Follow Staff Guidance:</span> Please cooperate with our social workers and staff on-site.</li>
+                            </ul>
+                        </li>
+                    </ol>
+                    <div class="mt-6 p-4 sm:p-5 bg-red-50 border border-red-200 rounded-xl text-red-700 shadow-sm">
+                        <p class="font-bold text-red-800 mb-2"><i class="fas fa-exclamation-triangle mr-2"></i>Notice: Equipment Compensation List 💸</p>
+                        <p class="text-sm mb-3">If any property is damaged or lost due to improper use, full compensation is required. Reference prices:</p>
+                        <ul class="list-disc pl-5 text-sm space-y-2">
+                            <li>🎱 <span class="font-bold">Billiards (Full Set): $12,000</span> (Important Note: If any single ball is lost, compensation for the entire set is required!)</li>
+                            <li>🎮 <span class="font-bold">PS5 Console & Accessories: $5,000</span></li>
+                            <li>🪵 <span class="font-bold">Carrom Board: $4,000</span></li>
+                            <li>🃏 <span class="font-bold">Boardgames:</span> Around $300 - $500 per set (Depends on the game)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4 sm:p-6 border-t border-gray-100 bg-gray-50 shrink-0">
+                <button id="tnc-agree-btn" disabled onclick="submitBookingToApi()" class="w-full bg-gray-300 text-gray-500 font-bold py-3 sm:py-4 rounded-xl text-sm sm:text-lg transition-all duration-300 cursor-not-allowed tracking-widest shadow-sm flex items-center justify-center gap-2">
+                    <i class="fas fa-arrow-down animate-bounce" id="tnc-btn-icon"></i>
+                    <span id="tnc-btn-text">請向下閱讀到底部 (Scroll to bottom)</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 成功預約 Modal -->
+    <div id="success-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 backdrop-blur-sm px-4">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl border-t-8 border-emerald-500 animate-pop">
+            <div class="w-16 h-16 sm:w-20 sm:h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
+                <i class="fas fa-check text-3xl sm:text-4xl text-emerald-500"></i>
+            </div>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-800 mb-1 tracking-wider">預約寫入成功</h3>
+            <p class="text-xs text-gray-400 mb-2">Booking Confirmed</p>
+            <p class="text-sm sm:text-base text-gray-500 mb-6" id="success-message">資料已同步至資料庫。<br><span class="text-xs">(Data synced to database)</span></p>
+            <button onclick="closeModal()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-lg transition-all shadow-md flex flex-col items-center justify-center">
+                <span>完成並返回</span><span class="text-[10px] font-normal">Done</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Loading 遮罩 -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white/80 hidden items-center justify-center z-[100] backdrop-blur-sm transition-opacity">
+        <div class="flex flex-col items-center">
+            <i class="fas fa-circle-notch fa-spin text-5xl sm:text-6xl text-emerald-500 mb-4"></i>
+            <p class="text-lg sm:text-xl font-bold text-slate-700 tracking-wider">系統連線中...</p>
+            <p class="text-sm text-slate-500 mt-1">Connecting to Server...</p>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 🚨 系統核心設定 🚨
+        // ==========================================
+        const API_URL = "https://script.google.com/macros/s/AKfycbyKESIOoidbS4u4kUtduPj9QCieYOZmoCIYQTvkP2smbFvzP4_sdF9sribDmBzV5qeN/exec"; 
+        const SHEET_URL = "https://docs.google.com/spreadsheets/d/1FRx6ZPXYzy5KZ4fvLL62xyCe7mjSsnqwaGkGAEuiLRM/edit?usp=sharing"; 
+        
+        let scheduleData = [];
+        let selectedSlotId = null;
+        let selectedZones = []; 
+        let availableDates = [];
+        let selectedDate = new Date(); 
+        const loadingOverlay = document.getElementById('loading-overlay');
+        
+        let logoClickCount = 0;
+        let logoClickTimer;
+
+        function showLoading() { loadingOverlay.classList.remove('hidden'); loadingOverlay.classList.add('flex'); }
+        function hideLoading() { loadingOverlay.classList.add('hidden'); loadingOverlay.classList.remove('flex'); }
+
+        async function verifyPassword(pwd) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'verifyAuth', password: pwd })
+                });
+                
+                const text = await response.text();
+                if (!text || text.trim() === "") {
+                    alert("⚠️ 系統偵測到 Apps Script 沒有正常回應！\n\n原因：後台仍運行緊舊版本程式碼。\n解決方法：請返回 Apps Script，按「部署」->「管理部署作業」-> 編輯(鉛筆) -> 選擇「建立新版本」-> 部署！");
+                    return false;
+                }
+
+                const result = JSON.parse(text);
+                return result.status === "success";
+            } catch(err) {
+                alert("連線發生錯誤：" + err.message + "\n(請確保 Apps Script 已成功發佈為「新版本」)");
+                return false;
+            }
+        }
+
+        async function handleLogoClick() {
+            logoClickCount++;
+            clearTimeout(logoClickTimer);
+            
+            if (logoClickCount >= 5) {
+                logoClickCount = 0;
+                const bookingSection = document.getElementById('booking-section');
+                const rulesSection = document.getElementById('rules-section');
+                const isLocked = bookingSection.classList.contains('hidden');
+                
+                if (isLocked) {
+                    const pwd = prompt("🔐 啟動職員預約模式 (Staff Mode)\n請輸入管理員密碼：");
+                    if (pwd !== null && pwd !== "") {
+                        showLoading();
+                        const isValid = await verifyPassword(pwd);
+                        hideLoading();
+                        
+                        if (isValid) {
+                            rulesSection.classList.add('hidden');
+                            rulesSection.classList.remove('flex');
+                            bookingSection.classList.remove('hidden');
+                            bookingSection.classList.add('flex');
+                            renderSchedule(); 
+                        } else {
+                            alert("密碼錯誤，拒絕存取。\nAccess Denied.");
+                        }
+                    }
+                } else {
+                    if(confirm("是否要鎖定系統並返回「純展示模式」？\nLock system and return to Display Mode?")) {
+                        bookingSection.classList.add('hidden');
+                        bookingSection.classList.remove('flex');
+                        rulesSection.classList.remove('hidden');
+                        rulesSection.classList.add('flex');
+                        resetForm();
+                        renderSchedule(); 
+                    }
+                }
+            }
+            logoClickTimer = setTimeout(() => { logoClickCount = 0; }, 2000);
+        }
+
+        async function openStaffChannel() {
+            const pwd = prompt("🔐 開啟資料庫 (Database Access)\n請輸入管理員密碼：");
+            if (pwd !== null && pwd !== "") {
+                showLoading();
+                const isValid = await verifyPassword(pwd);
+                hideLoading();
+                
+                if (isValid) {
+                    window.open(SHEET_URL, "_blank");
+                } else {
+                    alert("密碼錯誤，拒絕存取。\nAccess Denied.");
+                }
+            }
+        }
+
+        function formatDate(dateObj) {
+            return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+        }
+
+        function getDayName(dayIndex) {
+            return ['日', '一', '二', '三', '四', '五', '六'][dayIndex];
+        }
+
+        function initDates() {
+            availableDates = [];
+            let currDate = new Date();
+            let added = 0;
+            
+            while(added < 14) {
+                if (currDate.getDay() !== 0) { 
+                    availableDates.push(new Date(currDate));
+                    added++;
+                }
+                currDate.setDate(currDate.getDate() + 1);
+            }
+            selectedDate = availableDates[0]; 
+            renderDateSelector();
+        }
+
+        function renderDateSelector() {
+            const container = document.getElementById('date-selector-container');
+            container.innerHTML = '';
+            
+            availableDates.forEach((dateObj, index) => {
+                const isSelected = formatDate(dateObj) === formatDate(selectedDate);
+                const dateStr = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+                const dayStr = `星期${getDayName(dateObj.getDay())}`;
+                const isToday = formatDate(dateObj) === formatDate(new Date());
+                let displayDay = isToday ? '今日' : dayStr;
+
+                const btn = document.createElement('button');
+                btn.className = `flex flex-col items-center justify-center min-w-[70px] sm:min-w-[80px] py-2 px-1 rounded-xl border transition-all duration-300 font-bold ${
+                    isSelected 
+                    ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm transform scale-105' 
+                    : 'bg-white border-gray-200 text-gray-400 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-500'
+                }`;
+                btn.onclick = () => onDateSelect(index);
+                
+                btn.innerHTML = `
+                    <span class="text-xs sm:text-sm mb-0.5">${displayDay}</span>
+                    <span class="text-sm sm:text-base font-mono">${dateStr}</span>
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        function onDateSelect(index) {
+            selectedDate = availableDates[index];
+            renderDateSelector();
+            resetForm();
+            syncSchedule();
+        }
+
+        async function syncSchedule() {
+            if (!API_URL.startsWith("https://script.google.com")) {
+                scheduleData = generateDailySchedule(selectedDate); renderSchedule(); return;
+            }
+            showLoading();
+            try {
+                let baseSchedule = generateDailySchedule(selectedDate);
+                if (baseSchedule.length > 0) {
+                    const targetDateStr = formatDate(selectedDate);
+                    const response = await fetch(`${API_URL}?date=${targetDateStr}`);
+                    const result = await response.json();
+                    
+                    if (result.status === "success") {
+                        if (result.announcement && result.announcement !== "") {
+                            document.getElementById('announcement-text').textContent = result.announcement;
+                        }
+
+                        if (result.bookings) {
+                            result.bookings.forEach(serverBooking => {
+                                const slotIndex = baseSchedule.findIndex(s => s.id === serverBooking.id);
+                                if (slotIndex > -1) {
+                                    let isZone1 = serverBooking.time.includes("[CHILLZONE]");
+                                    let isZone2 = serverBooking.time.includes("[桌球/康樂棋]");
+                                    
+                                    if (isZone1) baseSchedule[slotIndex].zone1Status = "booked";
+                                    if (isZone2) baseSchedule[slotIndex].zone2Status = "booked";
+                                    if (!isZone1 && !isZone2) {
+                                        baseSchedule[slotIndex].zone1Status = "booked";
+                                        baseSchedule[slotIndex].zone2Status = "booked";
+                                    }
+                                    
+                                    baseSchedule[slotIndex].bookedBy = serverBooking.bookedBy;
+                                }
+                            });
+                        }
+                    }
+                }
+                scheduleData = baseSchedule;
+                renderSchedule();
+                
+                if (selectedSlotId) {
+                    const currentSlot = scheduleData.find(s => s.id === selectedSlotId);
+                    if (currentSlot) {
+                        let collision = false;
+                        if (selectedZones.length === 0 && currentSlot.zone1Status === 'booked' && currentSlot.zone2Status === 'booked') collision = true;
+                        if (selectedZones.includes('zone1') && currentSlot.zone1Status === 'booked') collision = true;
+                        if (selectedZones.includes('zone2') && currentSlot.zone2Status === 'booked') collision = true;
+
+                        if (collision) {
+                            resetForm(); 
+                            alert("抱歉，您選擇的時段或空間剛剛已被預約。\nThe selected slot/zone has just been booked by others.");
+                        }
+                    }
+                }
+            } catch (error) {
+                if(scheduleData.length === 0) scheduleData = generateDailySchedule(selectedDate);
+                renderSchedule();
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function generateDailySchedule(targetDateObj) {
+            const month = targetDateObj.getMonth() + 1; 
+            const day = targetDateObj.getDay(); 
+            const isSummer = (month === 7 || month === 8);
+            let startHour = 0; let endHour = 0;
+
+            if (day === 0) return []; 
+            if (isSummer) {
+                if ([1, 2, 3, 6].includes(day)) { startHour = 10; endHour = 18; }
+                else if ([4, 5].includes(day)) { startHour = 14; endHour = 22; }
+            } else {
+                if (day === 1) { startHour = 14; endHour = 18; }
+                else if (day === 2) { startHour = 10; endHour = 18; }
+                else if ([3, 4, 5].includes(day)) { startHour = 14; endHour = 22; }
+                else if (day === 6) { startHour = 10; endHour = 22; }
+            }
+
+            let newSchedule = []; let slotId = 1;
+            for (let i = startHour; i < endHour; i++) {
+                const startTimeStr = `${i.toString().padStart(2, '0')}:00`;
+                const endTimeStr = `${(i + 1).toString().padStart(2, '0')}:00`;
+                newSchedule.push({ id: slotId++, time: `${startTimeStr} - ${endTimeStr}`, endHour: i + 1, zone1Status: "available", zone2Status: "available" });
+            }
+            return newSchedule;
+        }
+
+        const scheduleContainer = document.getElementById('schedule-container');
+        const selectedTimeDisplay = document.getElementById('selected-time-display');
+        const selectedTimeIdInput = document.getElementById('selected-time-id');
+        const submitBtn = document.getElementById('submit-btn');
+        const bookingForm = document.getElementById('booking-form');
+        const successModal = document.getElementById('success-modal');
+        const successMessage = document.getElementById('success-message');
+        const cancelModal = document.getElementById('cancel-modal');
+        const cancelTime = document.getElementById('cancel-time');
+        let slotToCancelId = null;
+
+        function renderSchedule() {
+            scheduleContainer.innerHTML = ''; 
+            if (scheduleData.length === 0) {
+                scheduleContainer.innerHTML = `
+                    <div class="h-full min-h-[200px] sm:min-h-[300px] flex flex-col items-center justify-center text-gray-400">
+                        <i class="fas fa-door-closed text-4xl sm:text-6xl mb-3 sm:mb-4 text-gray-300"></i>
+                        <p class="text-lg sm:text-2xl font-bold text-gray-500 mb-2 tracking-wider">是日中心休息 Closed</p>
+                    </div>`; return;
+            }
+
+            const now = new Date();
+            const isToday = formatDate(selectedDate) === formatDate(now);
+            const currentHour = now.getHours(); 
+            const isLocked = document.getElementById('booking-section').classList.contains('hidden');
+
+            scheduleData.forEach(slot => {
+                const isPast = isToday ? (currentHour >= slot.endHour) : false; 
+                const z1Avail = slot.zone1Status === 'available';
+                const z2Avail = slot.zone2Status === 'available';
+                const isSelected = slot.id === selectedSlotId;
+                
+                let bgClass, borderClass, textClass, icon, statusText, cursorClass;
+
+                if (isPast) {
+                    bgClass = 'bg-gray-50 opacity-60'; borderClass = 'border border-gray-200'; textClass = 'text-gray-400';
+                    icon = '<i class="fas fa-history"></i>'; statusText = '已結束'; cursorClass = 'cursor-not-allowed'; 
+                } else if (!z1Avail && !z2Avail) {
+                    bgClass = 'bg-slate-100';
+                    borderClass = isSelected ? 'border-2 border-slate-400 shadow-md transform scale-[1.02]' : 'border border-slate-200';
+                    textClass = 'text-slate-500';
+                    icon = '<i class="fas fa-lock"></i>'; statusText = '已滿 (Full)'; 
+                    cursorClass = isLocked ? 'cursor-default' : 'cursor-pointer hover:bg-red-50 hover:border-red-200 hover:text-red-500';
+                } else if (z1Avail && z2Avail) {
+                    bgClass = isLocked ? 'bg-emerald-50' : 'bg-emerald-50 hover:bg-emerald-100';
+                    borderClass = isSelected ? 'border-2 border-emerald-500 shadow-md transform scale-[1.02]' : 'border border-emerald-200';
+                    textClass = 'text-emerald-700';
+                    icon = '<i class="far fa-check-circle text-emerald-500"></i>'; statusText = '可預約'; 
+                    cursorClass = isLocked ? 'cursor-default' : 'cursor-pointer'; 
+                } else {
+                    bgClass = isLocked ? 'bg-amber-50' : 'bg-amber-50 hover:bg-amber-100';
+                    borderClass = isSelected ? 'border-2 border-amber-500 shadow-md transform scale-[1.02]' : 'border border-amber-300 border-dashed';
+                    textClass = 'text-amber-700';
+                    icon = '<i class="fas fa-adjust text-amber-500"></i>';
+                    const remain = z1Avail ? 'CHILLZONE' : '桌球/康樂棋';
+                    statusText = `尚餘: ${remain}`; 
+                    cursorClass = isLocked ? 'cursor-default' : 'cursor-pointer';
+                }
+
+                const slotEl = document.createElement('div');
+                slotEl.className = `p-3 sm:p-4 rounded-xl flex items-center justify-between transition-all duration-300 ${bgClass} ${borderClass} ${textClass} ${cursorClass}`;
+                slotEl.innerHTML = `<div class="flex items-center gap-3 sm:gap-4"><div class="text-xl sm:text-2xl font-bold font-mono tracking-tighter w-24 sm:w-40 text-sm sm:text-base">${slot.time}</div><div class="text-sm sm:text-lg font-medium flex items-center gap-2">${icon} <span class="truncate max-w-[120px] sm:max-w-[200px]">${statusText}</span></div></div>`;
+
+                if (!isLocked && !isPast) {
+                    if (z1Avail || z2Avail) {
+                        slotEl.onclick = () => selectSlot(slot.id, slot.time, z1Avail, z2Avail);
+                    } else {
+                        slotEl.onclick = () => promptCancelSlot(slot.id, slot.time);
+                    }
+                }
+                scheduleContainer.appendChild(slotEl);
+            });
+        }
+
+        function selectSlot(id, timeString, z1Avail, z2Avail) {
+            if(document.getElementById('booking-section').classList.contains('hidden')) { return; }
+
+            selectedSlotId = id; selectedTimeIdInput.value = id;
+            selectedTimeDisplay.innerHTML = `
+                <div class="text-emerald-700 font-bold text-lg sm:text-xl flex items-center justify-center">
+                    <i class="far fa-clock mr-2"></i>${timeString}
+                </div>
+            `;
+            selectedTimeDisplay.className = "w-full p-3 border border-emerald-400 rounded-xl text-center bg-emerald-50 transition-all";
+            
+            const zoneContainer = document.getElementById('zone-selection-container');
+            zoneContainer.classList.remove('hidden');
+            setTimeout(() => zoneContainer.classList.remove('opacity-0'), 10);
+            
+            document.getElementById('form-step-3').classList.remove('opacity-50', 'pointer-events-none');
+            document.getElementById('form-step-4').classList.remove('opacity-50', 'pointer-events-none');
+
+            selectedZones = [];
+            
+            const btnZ1 = document.getElementById('btn-zone1');
+            const btnZ2 = document.getElementById('btn-zone2');
+
+            btnZ1.className = "flex-1 py-3 px-2 rounded-xl border font-bold transition-all text-center flex flex-col items-center justify-center gap-1 group " + (z1Avail ? "border-gray-200 text-gray-500 hover:border-emerald-500 hover:text-emerald-600 bg-white" : "border-gray-200 bg-gray-100 text-gray-300 cursor-not-allowed");
+            btnZ2.className = "flex-1 py-3 px-2 rounded-xl border font-bold transition-all text-center flex flex-col items-center justify-center gap-1 group " + (z2Avail ? "border-gray-200 text-gray-500 hover:border-emerald-500 hover:text-emerald-600 bg-white" : "border-gray-200 bg-gray-100 text-gray-300 cursor-not-allowed");
+            
+            btnZ1.disabled = !z1Avail;
+            btnZ2.disabled = !z2Avail;
+
+            checkFormReady();
+            renderSchedule(); 
+            zoneContainer.scrollIntoView({behavior: 'smooth', block: 'center'});
+        }
+
+        function selectZone(zone) {
+            const btn = document.getElementById(zone === 'zone1' ? 'btn-zone1' : 'btn-zone2');
+            if (btn.disabled) return;
+
+            if (selectedZones.includes(zone)) {
+                selectedZones = selectedZones.filter(z => z !== zone);
+                btn.classList.remove('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+                btn.classList.add('border-gray-200', 'text-gray-500', 'bg-white');
+            } else {
+                selectedZones.push(zone);
+                btn.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+                btn.classList.remove('border-gray-200', 'text-gray-500', 'bg-white');
+            }
+            checkFormReady();
+        }
+
+        function checkFormReady() {
+            const nameInput = document.getElementById('user-name');
+            const phoneInput = document.getElementById('user-phone');
+            
+            nameInput.value = nameInput.value.replace(/[^A-Za-z\s]/g, '');
+            phoneInput.value = phoneInput.value.replace(/[^0-9]/g, '').slice(0,8);
+
+            const userName = nameInput.value.trim();
+            const phone = phoneInput.value.trim();
+            const isPhoneValid = phone.length === 8;
+            
+            if (selectedSlotId && selectedZones.length > 0 && userName && isPhoneValid) {
+                submitBtn.disabled = false;
+                submitBtn.className = "w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 sm:py-4 rounded-xl text-base sm:text-lg transition-all duration-300 shadow-lg transform active:scale-95 tracking-widest flex flex-col items-center justify-center gap-0.5";
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.className = "w-full bg-gray-300 text-gray-500 font-bold py-3 sm:py-4 rounded-xl text-base sm:text-lg transition-all duration-300 cursor-not-allowed tracking-widest shadow-sm flex flex-col items-center justify-center gap-0.5";
+            }
+        }
+
+        document.getElementById('user-name').addEventListener('input', checkFormReady);
+        document.getElementById('user-phone').addEventListener('input', checkFormReady);
+
+        function promptCancelSlot(id, timeString) {
+            slotToCancelId = id; cancelTime.textContent = timeString;
+            cancelModal.classList.remove('hidden'); cancelModal.classList.add('flex');
+        }
+
+        function closeCancelModal() { cancelModal.classList.add('hidden'); cancelModal.classList.remove('flex'); slotToCancelId = null; }
+
+        async function confirmCancel() {
+            const slotIndex = scheduleData.findIndex(s => s.id === slotToCancelId);
+            if (slotIndex > -1) {
+                closeCancelModal(); showLoading();
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ action: 'cancel', date: formatDate(selectedDate), slotId: slotToCancelId })
+                    });
+                    const result = await response.json();
+                    if(result.status === "success") {
+                        await syncSchedule(); if (selectedSlotId === slotToCancelId) resetForm();
+                    } else { alert("刪除失敗 (Delete Failed)：" + result.message); }
+                } catch(err) { alert("網路錯誤，無法連接至伺服器。\nNetwork Error."); } finally { hideLoading(); }
+            }
+        }
+
+        const tncModal = document.getElementById('tnc-modal');
+        const tncContent = document.getElementById('tnc-content');
+        const tncAgreeBtn = document.getElementById('tnc-agree-btn');
+        const tncBtnText = document.getElementById('tnc-btn-text');
+        const tncBtnIcon = document.getElementById('tnc-btn-icon');
+        let hasReadTnc = false;
+
+        function openTncModal() {
+            hasReadTnc = false;
+            tncModal.classList.remove('hidden');
+            tncModal.classList.add('flex');
+            
+            tncContent.scrollTop = 0;
+            tncAgreeBtn.disabled = true;
+            tncAgreeBtn.className = "w-full bg-gray-300 text-gray-500 font-bold py-3 sm:py-4 rounded-xl text-sm sm:text-lg transition-all duration-300 cursor-not-allowed tracking-widest shadow-sm flex items-center justify-center gap-2";
+            tncBtnText.textContent = "請向下閱讀到底部 (Scroll to bottom)";
+            tncBtnIcon.className = "fas fa-arrow-down animate-bounce";
+
+            checkTncScroll(); 
+        }
+
+        function closeTncModal() { tncModal.classList.add('hidden'); tncModal.classList.remove('flex'); }
+
+        function checkTncScroll() {
+            if (hasReadTnc) return;
+            if (tncContent.scrollHeight - tncContent.scrollTop <= tncContent.clientHeight + 20) {
+                hasReadTnc = true;
+                tncAgreeBtn.disabled = false;
+                tncAgreeBtn.className = "w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 sm:py-4 rounded-xl text-sm sm:text-lg transition-all duration-300 shadow-lg transform active:scale-95 uppercase tracking-widest flex items-center justify-center gap-2";
+                tncBtnText.textContent = "我已閱讀並同意 (I have read and agree)";
+                tncBtnIcon.className = "fas fa-check-circle";
+            }
+        }
+
+        tncContent.addEventListener('scroll', checkTncScroll);
+
+        bookingForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); 
+            const userName = document.getElementById('user-name').value.trim();
+            const phone = document.getElementById('user-phone').value.trim();
+            const slotId = parseInt(selectedTimeIdInput.value);
+
+            if (!slotId || !userName || phone.length !== 8 || selectedZones.length === 0) return;
+
+            const slotIndex = scheduleData.findIndex(s => s.id === slotId);
+            if (slotIndex === -1) return;
+            
+            openTncModal(); 
+        });
+
+        async function submitBookingToApi() {
+            closeTncModal(); 
+
+            const userName = document.getElementById('user-name').value.trim();
+            const slotId = parseInt(selectedTimeIdInput.value);
+            const slotIndex = scheduleData.findIndex(s => s.id === slotId);
+            
+            if (slotIndex === -1) return;
+
+            let zoneLabels = [];
+            if (selectedZones.includes('zone1')) zoneLabels.push('[CHILLZONE]');
+            if (selectedZones.includes('zone2')) zoneLabels.push('[桌球/康樂棋]');
+            
+            const bookedTime = scheduleData[slotIndex].time + " " + zoneLabels.join(' ');
+            const selectedDateStr = formatDate(selectedDate);
+
+            showLoading();
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'book', date: selectedDateStr, slotId: slotId, time: bookedTime, bookedBy: userName, actualId: 'STAFF_BOOKING' })
+                });
+                const result = await response.json();
+                if(result.status === "success") {
+                    resetForm(); await syncSchedule(); 
+                    successMessage.innerHTML = `已為 ${userName} 寫入預約：<br><span class="text-emerald-600 font-bold text-lg inline-block mt-2">${bookedTime}</span>`;
+                    successModal.classList.remove('hidden'); successModal.classList.add('flex');
+                } else { alert("預約失敗 (Booking Failed)：" + result.message); }
+            } catch(err) { alert("網路錯誤，無法送出預約。\nNetwork Error."); } finally { hideLoading(); }
+        }
+
+        function resetForm() {
+            bookingForm.reset(); selectedSlotId = null; selectedTimeIdInput.value = ''; 
+            selectedZones = []; 
+            document.getElementById('zone-selection-container').classList.add('hidden', 'opacity-0');
+            
+            document.getElementById('form-step-3').classList.add('opacity-50', 'pointer-events-none');
+            document.getElementById('form-step-4').classList.add('opacity-50', 'pointer-events-none');
+
+            selectedTimeDisplay.innerHTML = `
+                <div><i class="fas fa-hand-pointer mr-1"></i> 請先點選左側可預約時段</div>
+                <div class="text-xs opacity-70">(Please select a slot on the left)</div>
+            `;
+            selectedTimeDisplay.className = "w-full p-3 border border-dashed border-gray-300 rounded-xl text-gray-500 text-center bg-gray-50 flex flex-col items-center justify-center gap-1 transition-all text-sm";
+            checkFormReady();
+        }
+
+        function closeModal() { successModal.classList.add('hidden'); successModal.classList.remove('flex'); }
+
+        let lastRenderedHour = new Date().getHours();
+        let syncTimer = 0;
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('date').textContent = now.toLocaleDateString('zh-HK', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+            
+            if (now.getHours() !== lastRenderedHour && formatDate(selectedDate) === formatDate(now)) {
+                lastRenderedHour = now.getHours(); renderSchedule();
+                if (selectedSlotId && scheduleData.find(s => s.id === selectedSlotId)?.endHour <= lastRenderedHour) resetForm();
+            }
+
+            syncTimer++;
+            if (syncTimer >= 30) {
+                syncTimer = 0;
+                if (loadingOverlay.classList.contains('hidden') && API_URL.startsWith("https://script.google.com")) {
+                    const targetDateStr = formatDate(selectedDate);
+                    fetch(`${API_URL}?date=${targetDateStr}`).then(res => res.json()).then(result => {
+                            if (result.status === "success") {
+                                if (result.announcement && result.announcement !== "") {
+                                    document.getElementById('announcement-text').textContent = result.announcement;
+                                }
+                                
+                                let baseSchedule = generateDailySchedule(selectedDate);
+                                result.bookings.forEach(sb => {
+                                    const idx = baseSchedule.findIndex(s => s.id === sb.id);
+                                    if (idx > -1) {
+                                        let isZ1 = sb.time.includes("[CHILLZONE]");
+                                        let isZ2 = sb.time.includes("[桌球/康樂棋]");
+                                        if (isZ1) baseSchedule[idx].zone1Status = "booked";
+                                        if (isZ2) baseSchedule[idx].zone2Status = "booked";
+                                        if (!isZ1 && !isZ2) { baseSchedule[idx].zone1Status = "booked"; baseSchedule[idx].zone2Status = "booked"; }
+                                        baseSchedule[idx].bookedBy = sb.bookedBy; 
+                                    }
+                                });
+                                scheduleData = baseSchedule; renderSchedule();
+                            }
+                        }).catch(e => console.log("Background sync error"));
+                }
+            }
+        }
+        
+        initDates(); setInterval(updateClock, 1000); updateClock(); syncSchedule();
+    </script>
+</body>
+</html>

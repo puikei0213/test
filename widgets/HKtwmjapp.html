@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>港式台牌計番練習器</title>
+    <!-- Load Phaser 3 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0/phaser.min.js"></script>
+    <style>
+        :root {
+            /* Premium Mahjong Table Felt Colors */
+            --felt-center: #2e7d32;
+            --felt-edge: #1b5e20;
+            --felt-dark: #0a3a10;
+            --modal-bg: rgba(0, 0, 0, 0.7);
+            --panel-bg: #ffffff;
+            --text-main: #333333;
+            --primary-btn: #ef4444; /* Tailwind red-500 */
+            --primary-btn-hover: #dc2626; /* Tailwind red-600 */
+            --secondary-btn: #f97316; /* Tailwind orange-500 */
+            --secondary-btn-hover: #ea580c; /* Tailwind orange-600 */
+            --info-btn: #3b82f6; /* Tailwind blue-500 */
+            --info-btn-hover: #2563eb; /* Tailwind blue-600 */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+        }
+
+        body {
+            background-color: var(--felt-edge);
+            /* Radial gradient with a noise texture for realistic felt */
+            background-image: 
+                radial-gradient(circle at center, var(--felt-center) 0%, var(--felt-edge) 70%, var(--felt-dark) 100%),
+                url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="noiseFilter"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.08"/></svg>');
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: rgba(0, 0, 0, 0.4);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .header-icon {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        button {
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+        }
+
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .btn-info { 
+            background: var(--info-btn);
+            border: 1px solid var(--info-btn-hover);
+            padding: 8px 16px;
+            font-size: 0.95rem;
+        }
+        .btn-info:hover { background: var(--info-btn-hover); }
+        
+        .btn-primary { 
+            background: var(--primary-btn);
+            border: 1px solid var(--primary-btn-hover);
+            padding: 14px 32px; 
+            font-size: 1.1rem; 
+            border-radius: 12px;
+        }
+        .btn-primary:hover { background: var(--primary-btn-hover); }
+        
+        .btn-secondary { 
+            background: var(--secondary-btn);
+            border: 1px solid var(--secondary-btn-hover);
+            padding: 14px 32px; 
+            font-size: 1.1rem; 
+            border-radius: 12px;
+        }
+        .btn-secondary:hover { background: var(--secondary-btn-hover); }
+        
+        .btn-dark {
+            background: linear-gradient(to bottom, #455a64, #263238);
+            border: 1px solid #1c313a;
+        }
+        .btn-dark:hover { background: linear-gradient(to bottom, #546e7a, #37474f); }
+        
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #e0e0e0;
+            color: #555;
+            text-shadow: none;
+        }
+        .btn-outline:hover {
+            background: #f5f5f5;
+            border-color: #bdbdbd;
+            color: #333;
+        }
+
+        main {
+            flex: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #wind-indicator {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.9);
+            font-size: 1.1rem;
+            background: rgba(0,0,0,0.6);
+            padding: 10px 24px;
+            border-radius: 30px;
+            z-index: 10;
+            display: flex;
+            gap: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .wind-val {
+            color: #ffd54f;
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-left: 6px;
+        }
+
+        footer {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 10;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--modal-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: var(--panel-bg);
+            color: var(--text-main);
+            width: 90%;
+            max-width: 500px; /* Reduced max-width for result modal */
+            max-height: 85vh;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+            overflow: hidden;
+        }
+        
+        #modal-cheatsheet .modal-content {
+            max-width: 800px;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+        }
+
+        .modal-header h2 { font-size: 1.4rem; color: #37474f; margin: 0; font-weight: bold;}
+        
+        .close-btn {
+            background: transparent;
+            color: #9e9e9e;
+            font-size: 1.8rem;
+            box-shadow: none;
+            padding: 0;
+            line-height: 1;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            text-shadow: none;
+        }
+        .close-btn:hover { color: #424242; background: #eeeeee; transform: none; box-shadow: none; }
+
+        .modal-body {
+            padding: 2rem 1.5rem;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Cheat Sheet Styles */
+        .cheat-sheet-section { margin-bottom: 2rem; }
+        .cheat-sheet-section h3 {
+            color: #b71c1c;
+            border-bottom: 2px solid #ffcdd2;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        .dict-list { display: flex; flex-direction: column; gap: 12px; }
+        .dict-item {
+            background: #f5f5f5;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border-left: 4px solid #4caf50;
+        }
+        .dict-header { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+        .dict-name { font-weight: bold; font-size: 1.1rem; color: #111; }
+        .dict-fan { color: #d32f2f; font-weight: bold; background: #ffebee; padding: 2px 8px; border-radius: 12px; font-size: 0.9rem;}
+        .dict-desc { font-size: 0.95rem; color: #666; line-height: 1.4; }
+
+        /* Result Styles */
+        .result-total {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .result-total .score-number {
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: #d32f2f;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+        .result-total .score-msg {
+            color: #757575;
+            font-size: 0.9rem;
+        }
+        
+        .result-patterns {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: #f1f8e9; /* Light green background */
+            padding: 1rem;
+            border-radius: 12px;
+            flex-grow: 1;
+        }
+        
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #c8e6c9;
+            font-size: 1.1rem;
+            color: #2e7d32; /* Dark green text */
+        }
+        .result-item:last-child { border-bottom: none; }
+        .result-item .pattern-name { font-weight: 600; color: #1b5e20;}
+        .result-item .pattern-score { 
+            background: #c8e6c9; 
+            padding: 4px 12px; 
+            border-radius: 20px; 
+            font-weight: bold; 
+            font-size: 0.95rem;
+        }
+
+        .modal-footer {
+            padding: 1.2rem 1.5rem;
+            background: #fafafa;
+            border-top: 1px solid #eeeeee;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        .modal-footer button {
+            flex: 1;
+            justify-content: center;
+            padding: 12px;
+        }
+        
+        /* View Board Overlay */
+        #view-board-overlay {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 900; /* Below modals, above board */
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        #view-board-overlay.active {
+            display: flex;
+        }
+        .view-board-hint {
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            backdrop-filter: blur(4px);
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <h1><span class="header-icon">🀄</span> 港式台牌計番練習器</h1>
+        <button class="btn-info" id="btn-cheatsheet">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+            番數表查詢
+        </button>
+    </header>
+
+    <main>
+        <div id="wind-indicator" style="display: none;">
+            <div>圈風:<span class="wind-val" id="val-round-wind">--</span></div>
+            <div>坐位:<span class="wind-val" id="val-seat-wind">--</span></div>
+        </div>
+        <div id="game-container"></div>
+        
+        <div id="view-board-overlay">
+            <div class="view-board-hint">檢視牌局中...</div>
+            <button class="btn-primary" id="btn-back-to-result" style="padding: 10px 24px; font-size: 1rem;">返回結算</button>
+        </div>
+    </main>
+
+    <footer>
+        <button class="btn-secondary" id="btn-generate">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/></svg>
+            隨機出題
+        </button>
+        <button class="btn-primary" id="btn-reveal">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            開估結算
+        </button>
+    </footer>
+
+    <!-- Cheat Sheet Modal -->
+    <div class="modal-overlay" id="modal-cheatsheet">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>港式台牌 番數字典 (Cheat Sheet)</h2>
+                <button class="close-btn" id="close-cheatsheet">&times;</button>
+            </div>
+            <div class="modal-body" id="cheatsheet-body">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Result Modal -->
+    <div class="modal-overlay" id="modal-reveal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>結算結果</h2>
+                <button class="close-btn" id="close-reveal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="result-total">
+                    <div class="score-number" id="result-total-score">0 番</div>
+                    <div class="score-msg" id="result-msg"></div>
+                </div>
+                <div class="result-patterns" id="result-patterns-list">
+                    <!-- Injected via JS -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-outline" id="btn-view-board">檢視牌局</button>
+                <button class="btn-dark" id="btn-next-puzzle">繼續下一題</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 完整的番數字典資料 (供外部 HTML UI 讀取)
+        // ==========================================
+        const window_twmahjongDictData = [
+            { category: "基礎與花牌", items: [
+                {name: "無花", fan: 1, desc: "沒有花牌"},
+                {name: "正花", fan: 2, desc: "花牌數字同坐位相同"},
+                {name: "爛花", fan: 1, desc: "花牌數字同坐位不同"},
+                {name: "一台花", fan: 10, desc: "集齊四隻同系列的花 (黑花1-4 或 紅花1-4)"},
+                {name: "兩台花 (花胡)", fan: 30, desc: "集齊八隻花，可立刻食胡，不須計手上牌型"},
+                {name: "聽牌/叮", fan: 5, desc: "聲明已經叫胡，不得轉章，不得暗槓，可以睇其他家的牌"},
+                {name: "雞胡", fan: 10, desc: "胡出時(不計莊前)只得一番"},
+                {name: "平胡", fan: 3, desc: "沒有刻子，全部順子"},
+                {name: "門清", fan: 3, desc: "門前清，沒有上或碰，暗槓亦可"},
+                {name: "自摸", fan: 1, desc: "自己摸食出"},
+                {name: "門清自摸", fan: 5, desc: "門前清自摸"},
+                {name: "對碰", fan: 1, desc: "叫胡叫對碰"},
+                {name: "獨獨", fan: 2, desc: "單釣或叫偏章"},
+                {name: "假獨", fan: 1, desc: "可以砌到叫單釣或叫偏章"}
+            ]},
+            { category: "字牌與風牌", items: [
+                {name: "碰正風", fan: 2, desc: "正風牌刻子"},
+                {name: "碰非正風", fan: 1, desc: "非正風牌刻子"},
+                {name: "碰中發白", fan: 2, desc: "中、發或白刻子"},
+                {name: "將眼", fan: 1, desc: "以一對二、五或八做眼"},
+                {name: "無字", fan: 1, desc: "整副牌沒有任何番子"},
+                {name: "無字花", fan: 5, desc: "沒有番子及沒有花牌"},
+                {name: "無字花平胡", fan: 10, desc: "大平糊：無番子、無花、且是平胡"},
+                {name: "小三風", fan: 15, desc: "有東、南、西、北其中兩組刻子及一對做眼"},
+                {name: "大三風", fan: 30, desc: "有東、南、西、北其中三組刻子"},
+                {name: "小四喜", fan: 60, desc: "有東、南、西、北其中三組刻子及一對做眼"},
+                {name: "大四喜", fan: 80, desc: "有東、南、西、北四組刻子"},
+                {name: "小三元", fan: 20, desc: "中、發、白其中兩組刻子及一對子"},
+                {name: "大三元", fan: 40, desc: "中、發、白三組刻子"},
+                {name: "字一色", fan: 80, desc: "全副牌只有番子，沒有數牌"}
+            ]},
+            { category: "順子系列", items: [
+                {name: "老少", fan: 2, desc: "同門一二三加七八九，或一一一加九九九"},
+                {name: "一般高", fan: 3, desc: "兩個一樣的順子"},
+                {name: "三般高", fan: 15, desc: "三個一樣的順子"},
+                {name: "四般高", fan: 30, desc: "四個一樣的順子"},
+                {name: "二相逢", fan: 2, desc: "二個款式不同的但數字一樣順子"},
+                {name: "三相逢", fan: 10, desc: "三個款式不同的但數字一樣順子"},
+                {name: "四同順", fan: 20, desc: "四個數字一樣順子，不論款式"},
+                {name: "五同順", fan: 40, desc: "五個數字一樣順子，不論款式"},
+                {name: "明龍", fan: 10, desc: "同一個款式，只有一至九，其中有些是上回來的"},
+                {name: "暗龍", fan: 20, desc: "同一個款式，只有一至九，全部是在手裡的"},
+                {name: "明雜龍", fan: 8, desc: "三種款式組成一至九的順子，其中有些是上回來的"},
+                {name: "暗雜龍", fan: 15, desc: "三種款式組成一至九的順子，全部是在手裡的"},
+                {name: "缺一門", fan: 5, desc: "不計番子而缺少筒、索或萬一門"},
+                {name: "混一色", fan: 30, desc: "只有一門牌及番子"},
+                {name: "清一色", fan: 80, desc: "只有一門牌及沒有番子"},
+                {name: "斷么", fan: 5, desc: "全副牌沒有一、九及番子"},
+                {name: "全帶混么", fan: 10, desc: "每一組合都有么九或番子"},
+                {name: "全帶么", fan: 15, desc: "每一組合都有么九，且無番子"},
+                {name: "混么", fan: 30, desc: "全副牌都是么九及番子"},
+                {name: "清么", fan: 80, desc: "全副牌都是么九"}
+            ]},
+            { category: "刻子系列", items: [
+                {name: "對對胡", fan: 30, desc: "全副牌是刻子"},
+                {name: "二暗刻", fan: 3, desc: "兩個刻子在自己手裡"},
+                {name: "三暗刻", fan: 10, desc: "三個刻子在自己手裡"},
+                {name: "四暗刻", fan: 30, desc: "四個刻子在自己手裡"},
+                {name: "五暗刻", fan: 80, desc: "五個刻子在自己手裡"},
+                {name: "二兄弟", fan: 3, desc: "兩款數字一樣的刻子"},
+                {name: "小三兄弟", fan: 10, desc: "二兄弟再加上另一個兄弟做眼"},
+                {name: "大三兄弟", fan: 15, desc: "三款數字一樣的刻子"},
+                {name: "小三姊妹", fan: 8, desc: "兩副同款而數子相連的刻子，另加一對數子相連的眼"},
+                {name: "大三姊妹", fan: 15, desc: "三副同款而數子相連的刻子"}
+            ]},
+            { category: "特殊脫軌", items: [
+                {name: "十三么", fan: 80, desc: "十三么，另三隻是自己摸回來的順子或暗刻，不能上或碰回來"},
+                {name: "十六不搭", fan: 40, desc: "東南西北中發白，其他三門每樣三隻，但不能搭上，再加一對眼"},
+                {name: "間間胡", fan: 100, desc: "自摸門前對對糊"},
+                {name: "嚦咕嚦咕", fan: 40, desc: "八對子，三隻一樣的不能碰出"},
+                {name: "一台花", fan: 10, desc: "四隻同系列的花"},
+                {name: "兩台花", fan: 30, desc: "二台花可以立刻食胡，不須要計手上的牌"}
+            ]}
+        ];
+
+        // ==========================================
+        // 核心計番邏輯 (ScoreCalculator)
+        // ==========================================
+        class ScoreCalculator {
+            constructor(seatWind = 1, roundWind = 1) { 
+                this.seatWind = seatWind; 
+                this.roundWind = roundWind;
+            }
+
+            _getTileCounts(tiles) {
+                const counts = {};
+                for (const tile of tiles) {
+                    if (tile.suit === 'h') continue; // Skip flowers for combo building
+                    const key = `${tile.suit}-${tile.value}`;
+                    counts[key] = (counts[key] || 0) + 1;
+                }
+                return counts;
+            }
+
+            _checkShiSanYao(tiles) {
+                const counts = this._getTileCounts(tiles);
+                const requiredKeys = ['w-1', 'w-9', 't-1', 't-9', 's-1', 's-9', 'f-E', 'f-S', 'f-W', 'f-N', 'z-C', 'z-F', 'z-P'];
+                for (const key of requiredKeys) {
+                    if (!counts[key] || counts[key] === 0) return false;
+                }
+                return true;
+            }
+            
+            _checkShiLiuBuDa(tiles) {
+                const counts = this._getTileCounts(tiles);
+                const honors = ['f-E', 'f-S', 'f-W', 'f-N', 'z-C', 'z-F', 'z-P'];
+                for(const h of honors) if(!counts[h]) return false;
+                const mainTiles = tiles.filter(t => t.suit !== 'h');
+                return new Set(mainTiles.map(t=>`${t.suit}-${t.value}`)).size >= 16;
+            }
+
+            _getUniqueTiles(counts) {
+                return Object.keys(counts).map(key => {
+                    const [suit, value] = key.split('-');
+                    return { suit, value: isNaN(value) ? value : parseInt(value, 10), key };
+                }).sort((a, b) => {
+                    if (a.suit !== b.suit) return a.suit.localeCompare(b.suit);
+                    if (a.suit === 'w' || a.suit === 't' || a.suit === 's') return a.value - b.value;
+                    return a.value.toString().localeCompare(b.value.toString());
+                });
+            }
+
+            _findCombinations(counts, targetMelds, targetPairs, currentCombo, allCombos) {
+                if (targetMelds === 0 && targetPairs === 0) {
+                    allCombos.push([...currentCombo]);
+                    return;
+                }
+
+                const uniqueTiles = this._getUniqueTiles(counts);
+                for (let i = 0; i < uniqueTiles.length; i++) {
+                    const tile = uniqueTiles[i];
+                    
+                    // Pair
+                    if (targetPairs > 0 && counts[tile.key] >= 2) {
+                        counts[tile.key] -= 2;
+                        currentCombo.push({ type: 'pair', tiles: [tile, tile] });
+                        this._findCombinations(counts, targetMelds, targetPairs - 1, currentCombo, allCombos);
+                        currentCombo.pop();
+                        counts[tile.key] += 2; 
+                    }
+
+                    // Pung
+                    if (targetMelds > 0 && counts[tile.key] >= 3) {
+                        counts[tile.key] -= 3;
+                        currentCombo.push({ type: 'pung', tiles: [tile, tile, tile] });
+                        this._findCombinations(counts, targetMelds - 1, targetPairs, currentCombo, allCombos);
+                        currentCombo.pop();
+                        counts[tile.key] += 3; 
+                    }
+
+                    // Chow
+                    if (targetMelds > 0 && ['w', 't', 's'].includes(tile.suit) && tile.value <= 7) {
+                        const nextKey1 = `${tile.suit}-${tile.value + 1}`;
+                        const nextKey2 = `${tile.suit}-${tile.value + 2}`;
+
+                        if (counts[tile.key] > 0 && counts[nextKey1] > 0 && counts[nextKey2] > 0) {
+                            counts[tile.key]--; counts[nextKey1]--; counts[nextKey2]--;
+                            const t1 = tile;
+                            const t2 = { suit: tile.suit, value: tile.value + 1, key: nextKey1 };
+                            const t3 = { suit: tile.suit, value: tile.value + 2, key: nextKey2 };
+                            
+                            currentCombo.push({ type: 'chow', tiles: [t1, t2, t3] });
+                            this._findCombinations(counts, targetMelds - 1, targetPairs, currentCombo, allCombos);
+                            currentCombo.pop();
+                            counts[tile.key]++; counts[nextKey1]++; counts[nextKey2]++; 
+                        }
+                    }
+                }
+            }
+            
+            _getValidHandCombinations(tiles) {
+                const counts = this._getTileCounts(tiles);
+                const allCombos = [];
+                this._findCombinations(counts, 5, 1, [], allCombos);
+                
+                const uniqueCombosMap = new Map();
+                for (const combo of allCombos) {
+                    const sortedCombo = [...combo].sort((a, b) => {
+                        if (a.type !== b.type) return a.type.localeCompare(b.type);
+                        return a.tiles[0].key.localeCompare(b.tiles[0].key);
+                    });
+                    const hash = JSON.stringify(sortedCombo);
+                    if (!uniqueCombosMap.has(hash)) {
+                        uniqueCombosMap.set(hash, combo);
+                    }
+                }
+                return Array.from(uniqueCombosMap.values());
+            }
+
+            _checkPingHu(combo) {
+                return combo.filter(m => m.type !== 'pair').every(m => m.type === 'chow');
+            }
+
+            _checkDuiDuiHu(combo) {
+                return combo.filter(m => m.type !== 'pair').every(m => m.type === 'pung');
+            }
+
+            _checkSuitPurity(tiles) {
+                let hasW = false, hasT = false, hasS = false, hasHonor = false;
+                for (const tile of tiles) {
+                    if (tile.suit === 'h') continue;
+                    if (tile.suit === 'w') hasW = true;
+                    else if (tile.suit === 't') hasT = true;
+                    else if (tile.suit === 's') hasS = true;
+                    else if (tile.suit === 'f' || tile.suit === 'z') hasHonor = true;
+                }
+                const suitsCount = (hasW ? 1 : 0) + (hasT ? 1 : 0) + (hasS ? 1 : 0);
+
+                return {
+                    isQingYiSe: suitsCount === 1 && !hasHonor,
+                    isHunYiSe: suitsCount === 1 && hasHonor,
+                    isWuMenQi: suitsCount === 3 && hasHonor,
+                    isZiYiSe: suitsCount === 0 && hasHonor,
+                    hasHonor: hasHonor
+                };
+            }
+            
+            _checkChowPatterns(combo) {
+                let fan = 0;
+                let patterns = [];
+                const chows = combo.filter(m => m.type === 'chow');
+                if (chows.length < 2) return { fan, patterns };
+
+                const chowMap = {}; 
+                chows.forEach(c => {
+                    const suit = c.tiles[0].suit;
+                    const val = c.tiles[0].value;
+                    chowMap[suit] = chowMap[suit] || {};
+                    chowMap[suit][val] = (chowMap[suit][val] || 0) + 1;
+                });
+
+                for (const suit in chowMap) {
+                    for (const val in chowMap[suit]) {
+                        const count = chowMap[suit][val];
+                        if (count === 2) { fan += 3; patterns.push('一般高 (3番)'); }
+                        else if (count === 3) { fan += 15; patterns.push('三般高 (15番)'); }
+                        else if (count === 4) { fan += 30; patterns.push('四般高 (30番)'); }
+                    }
+                }
+
+                const valMap = {};
+                chows.forEach(c => {
+                    const val = c.tiles[0].value;
+                    valMap[val] = valMap[val] || new Set();
+                    valMap[val].add(c.tiles[0].suit);
+                });
+                
+                for (const val in valMap) {
+                    const diffSuits = valMap[val].size;
+                    if (diffSuits === 2) { fan += 2; patterns.push('二相逢 (2番)'); }
+                    else if (diffSuits === 3) { fan += 10; patterns.push('三相逢 (10番)'); }
+                }
+                
+                for (const suit in chowMap) {
+                    if (chowMap[suit][1] >= 1 && chowMap[suit][7] >= 1) {
+                        fan += 2; patterns.push('老少 (2番)');
+                    }
+                }
+
+                return { fan, patterns: [...new Set(patterns)] }; 
+            }
+
+            _checkSanYuan(combo) {
+                let pungCount = 0;
+                let hasEye = false;
+                let totalFan = 0;
+                let patterns = [];
+
+                for (const meld of combo) {
+                    if (meld.tiles[0].suit === 'z') {
+                        if (meld.type === 'pung') {
+                            pungCount++;
+                            const tileValue = meld.tiles[0].value;
+                            let name = tileValue === 'C' ? '紅中' : (tileValue === 'F' ? '發' : '白板');
+                            patterns.push(`碰${name} (2番)`);
+                            totalFan += 2;
+                        }
+                        if (meld.type === 'pair') hasEye = true;
+                    }
+                }
+
+                if (pungCount === 3) { totalFan += 40; patterns.push('大三元 (40番)'); } 
+                else if (pungCount === 2 && hasEye) { totalFan += 20; patterns.push('小三元 (20番)'); }
+
+                return { fan: totalFan, patterns };
+            }
+
+            _checkSiXi(combo) {
+                let pungCount = 0;
+                let hasEye = false;
+                let totalFan = 0;
+                let patterns = [];
+                const windMap = {1: 'E', 2: 'S', 3: 'W', 4: 'N'};
+                const seatWindVal = windMap[this.seatWind];
+                const roundWindVal = windMap[this.roundWind];
+
+                for (const meld of combo) {
+                    if (meld.tiles[0].suit === 'f') {
+                        if (meld.type === 'pung') {
+                            pungCount++;
+                            let v = meld.tiles[0].value;
+                            if (v === seatWindVal && v === roundWindVal) {
+                                patterns.push(`碰雙番正風 (4番)`); totalFan += 4;
+                            } else if (v === seatWindVal) {
+                                patterns.push(`碰正風 [坐位] (2番)`); totalFan += 2;
+                            } else if (v === roundWindVal) {
+                                patterns.push(`碰正風 [圈風] (2番)`); totalFan += 2;
+                            } else {
+                                patterns.push(`碰非正風 (1番)`); totalFan += 1;
+                            }
+                        }
+                        if (meld.type === 'pair') hasEye = true;
+                    }
+                }
+
+                if (pungCount === 4) { totalFan += 80; patterns.push('大四喜 (80番)'); } 
+                else if (pungCount === 3 && hasEye) { totalFan += 60; patterns.push('小四喜 (60番)'); } 
+                else if (pungCount === 3 && !hasEye) { totalFan += 30; patterns.push('大三風 (30番)'); } 
+                else if (pungCount === 2 && hasEye) { totalFan += 15; patterns.push('小三風 (15番)'); }
+
+                return { fan: totalFan, patterns };
+            }
+            
+            _checkYaoJiu(tiles, combo) {
+                let isAllYaoJiu = true;
+                let hasHonor = false;
+                let hasNumberYaoJiu = false;
+                let hasNonYaoJiu = false;
+
+                const mainTiles = tiles.filter(t => t.suit !== 'h');
+
+                for (let t of mainTiles) {
+                    if (t.suit === 'f' || t.suit === 'z') {
+                        hasHonor = true;
+                    } else if (t.value === 1 || t.value === 9) {
+                        hasNumberYaoJiu = true;
+                    } else {
+                        isAllYaoJiu = false;
+                        hasNonYaoJiu = true;
+                    }
+                }
+
+                if (isAllYaoJiu) {
+                    if (hasHonor && hasNumberYaoJiu) return { fan: 30, pattern: '混么 (30番)' };
+                    if (!hasHonor && hasNumberYaoJiu) return { fan: 80, pattern: '清么 (80番)' };
+                } else if (!hasHonor && !hasNumberYaoJiu) {
+                    return { fan: 5, pattern: '斷么 (5番)' };
+                }
+                
+                let allMeldsHaveYao = true;
+                for(let m of combo) {
+                    let hasYao = false;
+                    for(let t of m.tiles) {
+                        if(t.suit === 'f' || t.suit === 'z' || t.value === 1 || t.value === 9) hasYao = true;
+                    }
+                    if(!hasYao) { allMeldsHaveYao = false; break; }
+                }
+                
+                if (allMeldsHaveYao && hasNonYaoJiu) {
+                    if (hasHonor) return { fan: 10, pattern: '全帶混么 (10番)' };
+                    else return { fan: 15, pattern: '全帶么 (15番)' };
+                }
+                
+                return null;
+            }
+            
+            _checkFlowers(tiles) {
+                const flowers = tiles.filter(t => t.suit === 'h');
+                if (flowers.length === 0) return { fan: 1, patterns: ['無花 (1番)'] };
+                
+                let score = 0;
+                let patterns = [];
+                let seasons = 0; // 黑花
+                let plants = 0;  // 紅花
+                let zhengHuaCount = 0;
+                let lanHuaCount = 0;
+                
+                for (let f of flowers) {
+                    if (f.type === 'season') seasons++;
+                    if (f.type === 'plant') plants++;
+                    
+                    if (f.value === this.seatWind) {
+                        score += 2;
+                        zhengHuaCount++;
+                    } else {
+                        score += 1; // 爛花
+                        lanHuaCount++;
+                    }
+                }
+                
+                if (zhengHuaCount > 0) patterns.push(zhengHuaCount > 1 ? `正花 x${zhengHuaCount} (${zhengHuaCount * 2}番)` : `正花 (2番)`);
+                if (lanHuaCount > 0) patterns.push(lanHuaCount > 1 ? `爛花 x${lanHuaCount} (${lanHuaCount}番)` : `爛花 (1番)`);
+                
+                if (seasons === 4 || plants === 4) {
+                    score += 10;
+                    patterns.push('一台花 (10番)');
+                }
+                if (seasons === 4 && plants === 4) {
+                    score += 30; // 兩台花
+                    patterns.push('兩台花 (30番)');
+                }
+                
+                return { fan: score, patterns, count: flowers.length };
+            }
+
+            calculate(tiles) {
+                const flowerResult = this._checkFlowers(tiles);
+                const mainTiles = tiles.filter(t => t.suit !== 'h');
+                
+                let baseScore = flowerResult.fan;
+                let basePatterns = [...flowerResult.patterns];
+
+                if (this._checkShiSanYao(mainTiles)) {
+                    return { isValid: true, score: 80 + baseScore, patterns: ['十三么 (80番)', ...basePatterns], message: "特殊脫軌牌型" };
+                }
+                if (this._checkShiLiuBuDa(mainTiles)) {
+                    return { isValid: true, score: 40 + baseScore, patterns: ['十六不搭 (40番)', ...basePatterns], message: "特殊脫軌牌型" };
+                }
+
+                const validCombinations = this._getValidHandCombinations(mainTiles);
+                if (validCombinations.length === 0) {
+                    if (flowerResult.fan >= 30) {
+                         return { isValid: true, score: flowerResult.fan, patterns: flowerResult.patterns, message: "花胡！" };
+                    }
+                    return { isValid: false, score: 0, patterns: [], message: "無效牌型 (無法湊齊五搭一眼)" };
+                }
+
+                let maxScore = -1;
+                let bestResult = null;
+
+                for (const combo of validCombinations) {
+                    let score = baseScore;
+                    let patterns = [...basePatterns];
+
+                    const isPingHu = this._checkPingHu(combo);
+                    const isDuiDui = this._checkDuiDuiHu(combo);
+                    
+                    if (isPingHu) { score += 3; patterns.push('平胡 (3番)'); } 
+                    else if (isDuiDui) { score += 30; patterns.push('對對胡 (30番)'); }
+
+                    const purity = this._checkSuitPurity(mainTiles);
+                    if (purity.isQingYiSe) { score += 80; patterns.push('清一色 (80番)'); } 
+                    else if (purity.isHunYiSe) { score += 30; patterns.push('混一色 (30番)'); }
+                    else if (purity.isZiYiSe) { score += 80; patterns.push('字一色 (80番)'); }
+                    else if (purity.isWuMenQi) { score += 10; patterns.push('五門齊 (10番)'); }
+                    
+                    // 無字花平胡 check
+                    if (!purity.hasHonor && isPingHu && flowerResult.count === 0) {
+                        score += 10;
+                        // Remove "無花" if "無字花平胡" is present to avoid double counting standard logic
+                        patterns = patterns.filter(p => p !== '無花 (1番)');
+                        patterns.push('無字花平胡 (10番)');
+                    } else if (!purity.hasHonor) {
+                        score += 1;
+                        patterns.push('無字 (1番)');
+                    }
+
+                    const chowResult = this._checkChowPatterns(combo);
+                    if (chowResult.fan > 0) {
+                        score += chowResult.fan;
+                        patterns = patterns.concat(chowResult.patterns);
+                    }
+
+                    const sanYuanResult = this._checkSanYuan(combo);
+                    if (sanYuanResult.fan > 0) {
+                        score += sanYuanResult.fan;
+                        patterns = patterns.concat(sanYuanResult.patterns);
+                    }
+
+                    const siXiResult = this._checkSiXi(combo);
+                    if (siXiResult.fan > 0) {
+                        score += siXiResult.fan;
+                        patterns = patterns.concat(siXiResult.patterns);
+                    }
+                    
+                    const yaoJiuResult = this._checkYaoJiu(tiles, combo);
+                    if (yaoJiuResult) {
+                        score += yaoJiuResult.fan;
+                        patterns.push(yaoJiuResult.pattern);
+                    }
+
+                    if (score > maxScore) {
+                        maxScore = score;
+                        bestResult = { isValid: true, score: maxScore, patterns: patterns, combo: combo };
+                    }
+                }
+                
+                // 雞胡判斷: 如果只有花牌分數 (無其他牌型)
+                if(bestResult && bestResult.score === baseScore && bestResult.score < 30) {
+                    bestResult.score += 10;
+                    bestResult.patterns.push('雞胡 (10番)');
+                }
+
+                return bestResult;
+            }
+        }
+
+        // ==========================================
+        // 題庫生成器 (Procedural Puzzle Generator)
+        // ==========================================
+        const PuzzleGenerator = {
+            T(suit, value, type) { return { suit, value, type }; },
+            
+            _buildFromMelds(melds) {
+                let hand = [];
+                for(let m of melds) {
+                    let s = m.s === 'p' ? 't' : m.s;
+                    if (m.t === 'pung') hand.push(this.T(s, m.v), this.T(s, m.v), this.T(s, m.v));
+                    else if (m.t === 'pair') hand.push(this.T(s, m.v), this.T(s, m.v));
+                    else if (m.t === 'chow') hand.push(this.T(s, m.v), this.T(s, m.v+1), this.T(s, m.v+2));
+                }
+                return hand;
+            },
+
+            _mutate(hand) {
+                let suits = ['w', 't', 's'].sort(() => 0.5 - Math.random());
+                let suitMap = { 'w': suits[0], 't': suits[1], 's': suits[2], 'f': 'f', 'z': 'z' };
+                
+                let numVals = hand.filter(t => ['w', 't', 's'].includes(t.suit)).map(t => t.value);
+                let shift = 0;
+                if (numVals.length > 0) {
+                    let min = Math.min(...numVals);
+                    let max = Math.max(...numVals);
+                    let maxUp = 9 - max;
+                    let maxDown = min - 1;
+                    shift = Math.floor(Math.random() * (maxUp + maxDown + 1)) - maxDown;
+                }
+
+                return hand.map(tile => {
+                    if (['w', 't', 's'].includes(tile.suit)) {
+                        return this.T(suitMap[tile.suit], tile.value + shift);
+                    }
+                    return this.T(tile.suit, tile.value); 
+                });
+            },
+
+            _addRandomFlowers(hand) {
+                if (Math.random() > 0.3) return hand;
+                
+                let numFlowers = Math.floor(Math.random() * 2) + 1; // 1 or 2 flowers
+                for(let i=0; i<numFlowers; i++) {
+                    let type = Math.random() > 0.5 ? 'season' : 'plant';
+                    let val = Math.floor(Math.random() * 4) + 1;
+                    hand.push(this.T('h', val, type));
+                }
+                return hand;
+            },
+
+            generate() {
+                const templates = [
+                    { name: "大三元 / 混一色", m: [{t:'pung',s:'z',v:'C'}, {t:'pung',s:'z',v:'F'}, {t:'pung',s:'z',v:'P'}, {t:'pung',s:'w',v:2}, {t:'pung',s:'w',v:8}, {t:'pair',s:'w',v:5}] },
+                    { name: "清一色 / 平胡 / 一般高", m: [{t:'chow',s:'t',v:1}, {t:'chow',s:'t',v:1}, {t:'chow',s:'t',v:4}, {t:'chow',s:'t',v:4}, {t:'chow',s:'t',v:7}, {t:'pair',s:'t',v:9}] },
+                    { name: "大四喜 / 混一色", m: [{t:'pung',s:'f',v:'E'}, {t:'pung',s:'f',v:'S'}, {t:'pung',s:'f',v:'W'}, {t:'pung',s:'f',v:'N'}, {t:'pung',s:'s',v:9}, {t:'pair',s:'s',v:1}] },
+                    { name: "小三元 / 碰正風 / 混一色", m: [{t:'pung',s:'z',v:'C'}, {t:'pung',s:'z',v:'F'}, {t:'pair',s:'z',v:'P'}, {t:'pung',s:'f',v:'E'}, {t:'chow',s:'w',v:1}, {t:'chow',s:'w',v:7}] },
+                    { name: "清一色 / 對對胡", m: [{t:'pung',s:'s',v:1}, {t:'pung',s:'s',v:2}, {t:'pung',s:'s',v:3}, {t:'pung',s:'s',v:4}, {t:'pung',s:'s',v:5}, {t:'pair',s:'s',v:8}] },
+                    { name: "三相逢 / 斷么", m: [{t:'chow',s:'w',v:2}, {t:'chow',s:'t',v:2}, {t:'chow',s:'s',v:2}, {t:'chow',s:'w',v:6}, {t:'pung',s:'s',v:5}, {t:'pair',s:'t',v:8}] },
+                    { name: "清一色 / 老少", m: [{t:'chow',s:'t',v:1}, {t:'chow',s:'t',v:7}, {t:'chow',s:'t',v:4}, {t:'chow',s:'t',v:2}, {t:'chow',s:'t',v:4}, {t:'pair',s:'t',v:5}] },
+                    { name: "小四喜", m: [{t:'pung',s:'f',v:'E'}, {t:'pung',s:'f',v:'S'}, {t:'pung',s:'f',v:'W'}, {t:'pair',s:'f',v:'N'}, {t:'pung',s:'z',v:'F'}, {t:'chow',s:'t',v:4}] },
+                    { name: "無字花平胡", m: [{t:'chow',s:'w',v:2}, {t:'chow',s:'t',v:4}, {t:'chow',s:'s',v:6}, {t:'chow',s:'w',v:7}, {t:'chow',s:'s',v:1}, {t:'pair',s:'t',v:2}], noFlower: true },
+                    { name: "全帶么", m: [{t:'chow',s:'w',v:1}, {t:'chow',s:'t',v:7}, {t:'chow',s:'s',v:1}, {t:'pung',s:'s',v:9}, {t:'pung',s:'w',v:9}, {t:'pair',s:'t',v:1}] },
+                    { name: "字一色", m: [{t:'pung',s:'f',v:'E'}, {t:'pung',s:'f',v:'S'}, {t:'pung',s:'z',v:'C'}, {t:'pung',s:'z',v:'F'}, {t:'pung',s:'z',v:'P'}, {t:'pair',s:'f',v:'N'}], noFlower: true }
+                ];
+
+                let tpl = templates[Math.floor(Math.random() * templates.length)];
+                let hand = [];
+                
+                if (Math.random() < 0.05) {
+                    tpl = { name: "十三么", noFlower: true };
+                    let orphans = [
+                        this.T('w',1), this.T('w',9), this.T('t',1), this.T('t',9), this.T('s',1), this.T('s',9),
+                        this.T('f','E'), this.T('f','S'), this.T('f','W'), this.T('f','N'),
+                        this.T('z','C'), this.T('z','F'), this.T('z','P')
+                    ];
+                    hand = [...orphans];
+                    hand.push(this.T('z','F')); 
+                    hand.push(this.T('w',2), this.T('w',3), this.T('w',4)); 
+                    hand = this._mutate(hand);
+                } else {
+                    hand = this._buildFromMelds(tpl.m);
+                    hand = this._mutate(hand);
+                }
+                
+                if (!tpl.noFlower) {
+                    hand = this._addRandomFlowers(hand);
+                }
+                
+                for (let i = hand.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [hand[i], hand[j]] = [hand[j], hand[i]];
+                }
+
+                return { title: tpl.name, tiles: hand };
+            }
+        };
+
+        // ==========================================
+        // Phaser 3 渲染邏輯
+        // ==========================================
+        let currentHandTiles = [];
+        let phaserGame;
+        let phaserScene;
+        let currentRoundWind = 1;
+        let currentSeatWind = 1;
+        
+        const TILE_WIDTH = 48;
+        const TILE_HEIGHT = 64;
+        const TILE_SPACING = 50;
+
+        function initPhaser() {
+            const config = {
+                type: Phaser.AUTO,
+                parent: 'game-container',
+                width: 1000,
+                height: 300, // Increased height for better centering
+                transparent: true,
+                scale: {
+                    mode: Phaser.Scale.FIT, // 自動等比縮放以適應容器
+                    autoCenter: Phaser.Scale.CENTER_BOTH // 自動置中
+                },
+                resolution: window.devicePixelRatio || 2,
+                autoRound: true,
+                scene: {
+                    preload: phaserPreload,
+                    create: phaserCreate
+                }
+            };
+            phaserGame = new Phaser.Game(config);
+        }
+
+        function phaserPreload() {
+            const baseUrl = 'https://cdn.jsdelivr.net/gh/FluffyStuff/riichi-mahjong-tiles@master/Regular/';
+            
+            // 萬, 筒, 索
+            const suits = ['Man', 'Pin', 'Sou'];
+            const prefixes = ['w', 't', 's'];
+            for(let i=0; i<3; i++) {
+                for(let v=1; v<=9; v++) {
+                    this.load.svg(`${prefixes[i]}${v}`, `${baseUrl}${suits[i]}${v}.svg`);
+                }
+            }
+            
+            // 風牌, 三元牌
+            this.load.svg('fE', `${baseUrl}Ton.svg`);
+            this.load.svg('fS', `${baseUrl}Nan.svg`);
+            this.load.svg('fW', `${baseUrl}Shaa.svg`);
+            this.load.svg('fN', `${baseUrl}Pei.svg`);
+            this.load.svg('zC', `${baseUrl}Chun.svg`);
+            this.load.svg('zF', `${baseUrl}Hatsu.svg`);
+            this.load.svg('zP', `${baseUrl}Haku.svg`);
+            
+            // Note: Flowers are drawn manually now
+        }
+
+        function phaserCreate() {
+            phaserScene = this;
+            generateAndRenderNewPuzzle();
+            document.getElementById('wind-indicator').style.display = 'flex';
+        }
+
+        function createTileGraph(scene, x, y, tileData) {
+            const container = scene.add.container(x, y);
+            container.baseY = y; 
+
+            // Shadow
+            const shadow = scene.add.graphics();
+            shadow.fillStyle(0x000000, 0.4);
+            shadow.fillRoundedRect(-TILE_WIDTH/2 + 4, -TILE_HEIGHT/2 + 4, TILE_WIDTH, TILE_HEIGHT, 4);
+            container.add(shadow);
+
+            // Background / Base
+            const bg = scene.add.graphics();
+            bg.fillStyle(0xF8F9FA, 1);
+            bg.fillRoundedRect(-TILE_WIDTH/2, -TILE_HEIGHT/2, TILE_WIDTH, TILE_HEIGHT, 4);
+            container.add(bg);
+
+            if (tileData.suit === 'h') {
+                // Manually draw Flower tiles (黑花 1-4, 紅花 1-4)
+                bg.lineStyle(1, 0xaaaaaa, 1);
+                bg.strokeRoundedRect(-TILE_WIDTH/2, -TILE_HEIGHT/2, TILE_WIDTH, TILE_HEIGHT, 4);
+                
+                const numStr = tileData.value.toString();
+                const isSeason = tileData.type === 'season';
+                const mainColor = isSeason ? '#333333' : '#d32f2f'; // 黑/紅
+                
+                const tStyleNum = { fontFamily: '"PingFang TC", Arial, sans-serif', fontSize: '28px', fontStyle: 'bold', color: mainColor };
+                const tStyleChar = { fontFamily: '"PingFang TC", Arial, sans-serif', fontSize: '18px', fontStyle: 'bold', color: mainColor };
+                
+                const t1 = scene.add.text(0, -10, numStr, tStyleNum).setOrigin(0.5);
+                const t2 = scene.add.text(0, 16, '花', tStyleChar).setOrigin(0.5);
+                
+                container.add(t1);
+                container.add(t2);
+            } else {
+                // Use SVG Image for standard tiles
+                let textureKey = `${tileData.suit}${tileData.value}`;
+                const img = scene.add.image(0, 0, textureKey);
+                img.setDisplaySize(TILE_WIDTH, TILE_HEIGHT);
+                container.add(img);
+                
+                const frame = scene.add.graphics();
+                frame.lineStyle(1, 0x999999, 1);
+                frame.strokeRoundedRect(-TILE_WIDTH/2, -TILE_HEIGHT/2, TILE_WIDTH, TILE_HEIGHT, 4);
+                container.add(frame);
+            }
+
+            // Simple Hover Effect
+            container.setSize(TILE_WIDTH, TILE_HEIGHT);
+            container.setInteractive();
+            container.on('pointerover', () => scene.tweens.add({ targets: container, y: container.baseY - 10, duration: 150 }));
+            container.on('pointerout', () => scene.tweens.add({ targets: container, y: container.baseY, duration: 150 }));
+
+            return container;
+        }
+
+        function sortTiles(tiles) {
+            const suitOrder = { 'h':0, 'w':1, 't':2, 's':3, 'f':4, 'z':5 }; // Flowers first
+            const windOrder = { 'E':1, 'S':2, 'W':3, 'N':4 };
+            const dragonOrder = { 'C':1, 'F':2, 'P':3 };
+            
+            tiles.sort((a, b) => {
+                if (suitOrder[a.suit] !== suitOrder[b.suit]) return suitOrder[a.suit] - suitOrder[b.suit];
+                if (a.suit === 'f') return windOrder[a.value] - windOrder[b.value];
+                if (a.suit === 'z') return dragonOrder[a.value] - dragonOrder[b.value];
+                return a.value - b.value; // Also handles flower number sorting
+            });
+        }
+
+        function randomizeWinds() {
+            currentRoundWind = Math.floor(Math.random() * 4) + 1; // 1-4
+            currentSeatWind = Math.floor(Math.random() * 4) + 1;
+            
+            const windMap = {1: '東', 2: '南', 3: '西', 4: '北'};
+            document.getElementById('val-round-wind').innerText = windMap[currentRoundWind];
+            document.getElementById('val-seat-wind').innerText = windMap[currentSeatWind];
+        }
+
+        function generateAndRenderNewPuzzle() {
+            if (!phaserScene) return;
+
+            UI.hideViewBoardOverlay(); // Ensure overlay is hidden on new puzzle
+            randomizeWinds();
+            
+            phaserScene.children.removeAll();
+
+            const puzzle = PuzzleGenerator.generate();
+            currentHandTiles = puzzle.tiles;
+            sortTiles(currentHandTiles);
+
+            const totalWidth = (currentHandTiles.length - 1) * TILE_SPACING + TILE_WIDTH;
+            const startX = (1000 - totalWidth) / 2 + (TILE_WIDTH / 2);
+            const startY = 150; // Center Y
+
+            currentHandTiles.forEach((tileData, index) => {
+                const targetX = startX + index * TILE_SPACING;
+                const tileObj = createTileGraph(phaserScene, targetX, startY, tileData);
+                tileObj.y = startY - 40; 
+                tileObj.alpha = 0;
+                
+                phaserScene.tweens.add({
+                    targets: tileObj,
+                    y: startY,
+                    alpha: 1,
+                    duration: 300,
+                    delay: index * 30,
+                    ease: 'Back.easeOut'
+                });
+            });
+        }
+
+        const UI = {
+            renderCheatSheet() {
+                const body = document.getElementById('cheatsheet-body');
+                body.innerHTML = '';
+                window_twmahjongDictData.forEach(cat => {
+                    const sec = document.createElement('div');
+                    sec.className = 'cheat-sheet-section';
+                    sec.innerHTML = `<h3>${cat.category}</h3>`;
+                    
+                    const list = document.createElement('div');
+                    list.className = 'dict-list';
+                    
+                    cat.items.forEach(item => {
+                        list.innerHTML += `
+                            <div class="dict-item">
+                                <div class="dict-header">
+                                    <span class="dict-name">${item.name}</span>
+                                    <span class="dict-fan">${item.fan} 番</span>
+                                </div>
+                                <div class="dict-desc">${item.desc}</div>
+                            </div>
+                        `;
+                    });
+                    sec.appendChild(list);
+                    body.appendChild(sec);
+                });
+            },
+            showModal(id) { document.getElementById(id).classList.add('active'); },
+            hideModal(id) { document.getElementById(id).classList.remove('active'); },
+            showViewBoardOverlay() {
+                document.getElementById('modal-reveal').classList.remove('active');
+                document.getElementById('view-board-overlay').classList.add('active');
+            },
+            hideViewBoardOverlay() {
+                document.getElementById('view-board-overlay').classList.remove('active');
+            }
+        };
+
+        // Event Listeners
+        document.getElementById('btn-cheatsheet').addEventListener('click', () => UI.showModal('modal-cheatsheet'));
+        document.getElementById('close-cheatsheet').addEventListener('click', () => UI.hideModal('modal-cheatsheet'));
+        
+        document.getElementById('btn-generate').addEventListener('click', () => {
+            generateAndRenderNewPuzzle();
+        });
+
+        document.getElementById('btn-reveal').addEventListener('click', () => {
+            if (currentHandTiles.length === 0) return;
+
+            const calc = new ScoreCalculator(currentSeatWind, currentRoundWind);
+            const result = calc.calculate(currentHandTiles);
+            
+            document.getElementById('result-total-score').innerText = result.isValid ? `${result.score} 番` : '0 番';
+            document.getElementById('result-msg').innerText = result.message || '';
+            
+            const list = document.getElementById('result-patterns-list');
+            list.innerHTML = '';
+            
+            if (result.patterns.length > 0) {
+                result.patterns.forEach(p => {
+                    // Extract name and score for better styling
+                    const match = p.match(/(.*)\s\((.*番)\)/);
+                    if(match) {
+                        list.innerHTML += `<div class="result-item"><span class="pattern-name">${match[1]}</span><span class="pattern-score">${match[2]}</span></div>`;
+                    } else {
+                        list.innerHTML += `<div class="result-item"><span class="pattern-name">達成牌型</span><span class="pattern-score">${p}</span></div>`;
+                    }
+                });
+            } else {
+                list.innerHTML = `<div class="result-item" style="justify-content:center; color:#d32f2f;">未能湊齊五搭一眼</div>`;
+            }
+
+            UI.showModal('modal-reveal');
+        });
+
+        document.getElementById('close-reveal').addEventListener('click', () => UI.hideModal('modal-reveal'));
+        
+        // New Buttons
+        document.getElementById('btn-next-puzzle').addEventListener('click', () => {
+            UI.hideModal('modal-reveal');
+            generateAndRenderNewPuzzle();
+        });
+        
+        document.getElementById('btn-view-board').addEventListener('click', () => {
+            UI.showViewBoardOverlay();
+        });
+        
+        document.getElementById('btn-back-to-result').addEventListener('click', () => {
+            UI.hideViewBoardOverlay();
+            UI.showModal('modal-reveal');
+        });
+
+        // Initialize App
+        UI.renderCheatSheet();
+        initPhaser();
+
+    </script>
+</body>
+</html>

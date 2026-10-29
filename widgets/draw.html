@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>幸運號碼抽獎機 | 配記</title>
+    <style>
+        body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; background: #0F172A; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* 統一懸浮導航列 */
+        .top-nav { position: fixed; top: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; z-index: 100; pointer-events: none; }
+        .nav-btn { pointer-events: auto; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); color: white; text-decoration: none; padding: 10px 20px; border-radius: 50px; font-weight: bold; font-size: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.2); cursor: pointer; transition: 0.2s; }
+        .nav-btn:hover { background: rgba(255,255,255,0.2); }
+
+        #display-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
+        h1 { font-size: 2rem; color: #94A3B8; margin-bottom: 0; font-weight: 500; letter-spacing: 5px; }
+        
+        #number-display { font-size: 18rem; font-weight: bold; font-variant-numeric: tabular-nums; color: #FBBF24; text-shadow: 0 0 40px rgba(251, 191, 36, 0.4); line-height: 1; margin: 20px 0; }
+        #status-text { background: rgba(255,255,255,0.1); padding: 10px 30px; border-radius: 50px; color: #E2E8F0; font-size: 1.2rem; font-weight: bold; }
+
+        .controls { background: rgba(0,0,0,0.5); padding: 25px; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+        .input-group { display: inline-block; background: #1E293B; padding: 5px; border-radius: 12px; margin-right: 15px; }
+        input[type="number"] { background: transparent; border: none; color: white; font-size: 1.2rem; width: 60px; text-align: center; outline: none; font-weight: bold; }
+        button.reset { background: #334155; color: #fff; border: none; padding: 12px 25px; border-radius: 12px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button.reset:active { transform: scale(0.95); }
+
+        /* 說明書 Modal */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(5px); }
+        .modal-content { background: white; color: #333; padding: 30px; border-radius: 20px; max-width: 400px; }
+        .modal-content h2 { margin-top: 0; color: #F59E0B; }
+        .modal-content p { font-size: 1rem; line-height: 1.6; }
+        .close-btn { width: 100%; background: #F59E0B; color: white; border: none; padding: 12px; border-radius: 12px; font-size: 1rem; font-weight: bold; margin-top: 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="top-nav">
+        <a href="../index.html" class="nav-btn">← 首頁</a>
+        <button class="nav-btn" onclick="toggleInfo()">ℹ️ 說明書</button>
+    </div>
+
+    <div id="display-area" onclick="toggleDraw()">
+        <h1>LUCKY DRAW</h1>
+        <div id="number-display">00</div>
+        <div id="status-text">👆 點擊螢幕開始</div>
+    </div>
+
+    <div class="controls">
+        <div class="input-group">
+            <input type="number" id="min" value="1"> <span style="color:#64748B;">至</span> 
+            <input type="number" id="max" value="100">
+        </div>
+        <button class="reset" onclick="reset()">重置</button>
+    </div>
+
+    <div id="infoModal" class="modal" onclick="toggleInfo()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2>🎲 幸運號碼抽獎機</h2>
+            <p><strong>應用場景：</strong></p>
+            <p>1. <strong>節日大會/講座：</strong> 全螢幕大字體設計，接駁投影機後，可供全場觀看抽獎過程。<br>
+               2. <strong>小組物資分配：</strong> 當遇上物資有限（如福袋、玩具），可透過簡單隨機抽號碼決定，公平公正。<br>
+               3. <strong>課堂抽籤：</strong> 用作隨機抽取學童/參加者回答問題。</p>
+            <button class="close-btn" onclick="toggleInfo()">完成設定</button>
+        </div>
+    </div>
+
+    <script>
+        let running = false; let timer;
+        const display = document.getElementById('number-display');
+        const status = document.getElementById('status-text');
+
+        function toggleInfo() {
+            const modal = document.getElementById('infoModal');
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function toggleDraw() {
+            if (running) {
+                clearInterval(timer); running = false;
+                status.innerHTML = "🎉 恭喜中獎！(點擊再抽)";
+                display.style.color = "#FF453A"; 
+                display.style.textShadow = "0 0 40px rgba(255, 69, 58, 0.4)";
+            } else {
+                let min = parseInt(document.getElementById('min').value);
+                let max = parseInt(document.getElementById('max').value);
+                if(min >= max) { alert("範圍設定錯誤！"); return; }
+
+                running = true;
+                display.style.color = "#FBBF24";
+                display.style.textShadow = "0 0 40px rgba(251, 191, 36, 0.4)";
+                status.innerHTML = "🛑 點擊螢幕停止";
+                
+                timer = setInterval(() => {
+                    display.innerText = Math.floor(Math.random() * (max - min + 1)) + min;
+                }, 40); 
+            }
+        }
+
+        function reset() {
+            clearInterval(timer); running = false;
+            display.innerText = "00";
+            display.style.color = "#FBBF24";
+            display.style.textShadow = "0 0 40px rgba(251, 191, 36, 0.4)";
+            status.innerHTML = "👆 點擊螢幕開始";
+        }
+    </script>
+</body>
+</html>

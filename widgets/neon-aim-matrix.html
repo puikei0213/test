@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>電競敏捷專注儀 | 配記</title>
+<script src="/components.js" defer></script>
+    <style>
+        /* =========================================
+           🛡️ 核心防禦 CSS：絕對禁止修改此區塊
+           ========================================= */
+        :root { --bg-color: #0f172a; --primary: #0ea5e9; }
+        * { box-sizing: border-box; touch-action: none; /* 禁用瀏覽器預設手勢 */ }
+        body {
+            margin: 0; padding: 0; 
+            width: 100vw; height: 100dvh; 
+            overflow: hidden; 
+            background: var(--bg-color); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            user-select: none; -webkit-user-select: none; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        widget-nav, widget-modal { display: block; width: 100%; position: relative; z-index: 1000; }
+        .modal-overlay.show { display: flex !important; } /* ✨ 確保說明書能正常彈出 */
+        
+        /* =========================================
+           🎨 工具專屬 UI CSS
+           ========================================= */
+        :root {
+            --target-color: #0ea5e9;
+            --target-glow: rgba(14, 165, 233, 0.6);
+            --hit-color: #10b981;
+            --miss-color: #ef4444;
+            --panel-bg: rgba(15, 23, 42, 0.95);
+        }
+
+        #app-container {
+            width: 100%; flex-grow: 1; position: relative;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: radial-gradient(circle at center, #1e293b 0%, var(--bg-color) 100%);
+            cursor: crosshair;
+        }
+
+        #gameCanvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
+        }
+
+        /* 頂部即時數據 HUD (已下移並適配手機) */
+        .hud-panel {
+            position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(14, 165, 233, 0.3);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            color: #e2e8f0; padding: 10px 16px; border-radius: 30px;
+            font-size: 0.85rem; font-weight: bold; text-align: center;
+            z-index: 10; pointer-events: none;
+            display: flex; gap: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+            transition: opacity 0.3s; white-space: nowrap;
+        }
+        .hud-stat span { color: var(--primary); font-size: 1.1rem; }
+
+        /* 置底控制面板 */
+        .game-console {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background: var(--panel-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(14, 165, 233, 0.2);
+            /* 🚨 嚴格套用 iOS 安全區防護 */
+            padding: 20px 25px calc(50px + env(safe-area-inset-bottom));
+            z-index: 50; display: flex; flex-direction: column; gap: 15px;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .game-console.hidden { transform: translateY(100%); }
+
+        .control-row { display: flex; align-items: center; gap: 15px; width: 100%; }
+        .row-label { font-size: 0.85rem; font-weight: 600; color: #94a3b8; white-space: nowrap; width: 70px; text-align: right; }
+
+        /* 🚨 局部解鎖：滑桿必須加上 touch-action: auto; */
+        input[type="range"] {
+            flex: 1; -webkit-appearance: none; background: rgba(255, 255, 255, 0.1);
+            height: 6px; border-radius: 3px; outline: none;
+            touch-action: auto; /* ✨ 局部解鎖手勢 */
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
+            background: var(--primary); box-shadow: 0 0 10px var(--target-glow); cursor: pointer;
+        }
+
+        .action-btn {
+            background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.3);
+            color: #bae6fd; padding: 12px 24px; border-radius: 12px;
+            font-size: 0.9rem; font-weight: bold; cursor: pointer;
+            transition: all 0.2s; white-space: nowrap; flex: 1;
+        }
+        .action-btn:active { transform: scale(0.95); background: rgba(14, 165, 233, 0.2); }
+        .action-btn.start { background: var(--primary); color: #0f172a; border: none; box-shadow: 0 4px 15px var(--target-glow); }
+
+        /* 結算畫面 */
+        .results-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            z-index: 40; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .results-overlay.show { opacity: 1; pointer-events: auto; }
+        
+        .results-card {
+            background: #1e293b; border: 1px solid rgba(14, 165, 233, 0.3);
+            padding: 30px 20px; border-radius: 20px; text-align: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6); transform: scale(0.9); transition: transform 0.3s;
+            width: 90%; max-width: 350px;
+        }
+        .results-overlay.show .results-card { transform: scale(1); }
+        .results-title { color: #f8fafc; font-size: 1.3rem; font-weight: bold; margin-bottom: 20px; }
+        .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 25px; }
+        .stat-box { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 12px; }
+        .stat-label { color: #94a3b8; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 5px; }
+        .stat-val { color: var(--primary); font-size: 1.5rem; font-weight: bold; }
+        .stat-val.acc { color: var(--hit-color); }
+    </style>
+</head>
+<body>
+    <widget-nav title="電競敏捷專注儀"></widget-nav>
+
+    <div id="app-container">
+        <div class="hud-panel" id="hud">
+            <div class="hud-stat">剩餘: <span id="time-val">30</span>s</div>
+            <div class="hud-stat">命中: <span id="hit-val">0</span></div>
+            <div class="hud-stat">準度: <span id="acc-val">100</span>%</div>
+        </div>
+        
+        <canvas id="gameCanvas"></canvas>
+
+        <div class="results-overlay" id="results-panel">
+            <div class="results-card">
+                <div class="results-title">訓練完成</div>
+                <div class="results-grid">
+                    <div class="stat-box">
+                        <div class="stat-label">精準命中</div>
+                        <div class="stat-val" id="res-hits">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">綜合準確率</div>
+                        <div class="stat-val acc" id="res-acc">0%</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">無效亂點</div>
+                        <div class="stat-val" style="color:var(--miss-color)" id="res-misses">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">錯失標靶</div>
+                        <div class="stat-val" style="color:#f59e0b" id="res-dropped">0</div>
+                    </div>
+                </div>
+                <button class="action-btn start" style="width: 100%;" onclick="showConsole()">重新設定</button>
+            </div>
+        </div>
+
+        <div class="game-console" id="console">
+            <div class="control-row">
+                <span class="row-label">標靶大小</span>
+                <input type="range" id="size-slider" min="20" max="60" value="40">
+            </div>
+            <div class="control-row">
+                <span class="row-label">出現頻率</span>
+                <input type="range" id="speed-slider" min="30" max="120" value="70">
+            </div>
+            <div class="control-row" style="margin-top: 5px;">
+                <button class="action-btn" id="audio-btn" onclick="initAudio()">🎵 開啟音效</button>
+                <button class="action-btn start" onclick="startGame()">▶ 開始訓練</button>
+            </div>
+        </div>
+    </div>
+
+    <widget-modal>
+        <p style="color: #1e293b;"><strong>青年工作、專注力訓練與衝動控制應用場景：</strong></p>
+        <ul style="color: #334155; line-height: 1.6; padding-left: 20px; margin-bottom: 12px;">
+            <li><strong>電競化專注力評估：</strong> 摒棄沉悶的紙筆測試。要求青年在 30 秒內追蹤並點擊隨機出現的標靶，測試其持續性專注力。</li>
+            <li><strong>衝動控制訓練 (Impulse Control)：</strong> 系統嚴格計算「準確率」，點擊空白處會被記錄為「無效亂點」並發出警告音，藉此訓練 ADHD 青年「看準才出手」的抑制能力。</li>
+            <li><strong>心流狀態進入：</strong> 動態擴縮的霓虹標靶與即時聽覺反饋，能快速將青年的大腦帶入心流狀態。同工可調節「標靶大小」與「頻率」以適配能力。</li>
+        </ul>
+        <p style="font-size: 0.85rem; color: #475569; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 10px;">
+            💡 <strong>操作指引：</strong> 調整難度後點擊開始。目標是盡可能點擊出現的藍色標靶。注意不要亂點空白處，否則會扣除準確率！
+        </p>
+    </widget-modal>
+
+    <script>
+        /* =========================================
+           📱 核心防禦物理引擎與敏捷標靶邏輯
+           ========================================= */
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const consoleEl = document.getElementById('console');
+        const resultsEl = document.getElementById('results-panel');
+        
+        // HUD Elements
+        const elTime = document.getElementById('time-val');
+        const elHit = document.getElementById('hit-val');
+        const elAcc = document.getElementById('acc-val');
+        const audioBtn = document.getElementById('audio-btn');
+
+        let width, height;
+        let targets = [];
+        let particles = [];
+        let crosshairs = []; 
+        
+        // 遊戲狀態與參數
+        let gameState = 'menu'; 
+        let gameTimer = null;
+        let spawnTimer = null;
+        let timeLeft = 30;
+        let stats = { hits: 0, clicks: 0, dropped: 0 };
+        
+        // 音頻引擎
+        let audioCtx = null;
+        let isAudioReady = false;
+
+        function resize() {
+            // 🔧 強制取得視窗真實大小，避免手機上容器撐不開導致 0x0
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize(); // 初始化調用
+
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            isAudioReady = true;
+            audioBtn.innerText = "🔊 音效已開";
+            audioBtn.style.color = "var(--hit-color)";
+            audioBtn.style.borderColor = "rgba(16, 185, 129, 0.4)";
+        }
+
+        // Web Audio API: 電競風格反饋音效
+        function playSound(type) {
+            if (!audioCtx || !isAudioReady) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            const now = audioCtx.currentTime;
+            
+            if (type === 'hit') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                osc.start(now); osc.stop(now + 0.15);
+            } else if (type === 'miss') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                osc.start(now); osc.stop(now + 0.2);
+            }
+        }
+
+        /* =========================================
+           🎯 遊戲核心邏輯
+           ========================================= */
+        function startGame() {
+            initAudio();
+            gameState = 'playing';
+            consoleEl.classList.add('hidden');
+            resultsEl.classList.remove('show');
+            
+            // 重置數據
+            timeLeft = 30;
+            stats = { hits: 0, clicks: 0, dropped: 0 };
+            targets = [];
+            particles = [];
+            crosshairs = [];
+            updateHUD();
+
+            // 啟動計時器
+            gameTimer = setInterval(() => {
+                timeLeft--;
+                updateHUD();
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+
+            // 啟動生成器
+            const speedVal = document.getElementById('speed-slider').value;
+            const spawnInterval = 1500 - (speedVal * 10); 
+            
+            spawnTimer = setInterval(spawnTarget, spawnInterval);
+            spawnTarget(); 
+        }
+
+        function endGame() {
+            gameState = 'results';
+            clearInterval(gameTimer);
+            clearInterval(spawnTimer);
+            targets = [];
+            
+            // 計算並顯示結果
+            const accuracy = stats.clicks > 0 ? Math.round((stats.hits / stats.clicks) * 100) : 0;
+            const misses = stats.clicks - stats.hits;
+            
+            document.getElementById('res-hits').innerText = stats.hits;
+            document.getElementById('res-acc').innerText = accuracy + '%';
+            document.getElementById('res-misses').innerText = misses;
+            document.getElementById('res-dropped').innerText = stats.dropped;
+            
+            resultsEl.classList.add('show');
+        }
+
+        function showConsole() {
+            resultsEl.classList.remove('show');
+            consoleEl.classList.remove('hidden');
+            gameState = 'menu';
+        }
+
+        function updateHUD() {
+            elTime.innerText = timeLeft;
+            elHit.innerText = stats.hits;
+            const acc = stats.clicks > 0 ? Math.round((stats.hits / stats.clicks) * 100) : 100;
+            elAcc.innerText = acc;
+        }
+
+        function spawnTarget() {
+            if (gameState !== 'playing') return;
+            
+            const maxRadius = parseInt(document.getElementById('size-slider').value);
+            const padding = maxRadius + 15; // 邊距
+            
+            // 🔧 限定生成區域：避開頂部 HUD (y:120) 和畫面太邊緣
+            const minY = 130 + padding;
+            const maxY = height - padding;
+            
+            // 確保視窗有足夠高度生成
+            const validHeight = Math.max(10, maxY - minY);
+            
+            const x = padding + Math.random() * Math.max(10, width - padding * 2);
+            const y = minY + Math.random() * validHeight;
+
+            targets.push({
+                id: Date.now() + Math.random(),
+                x: x, y: y,
+                r: 1, // 🔧 修復：半徑從 1 開始，防止 CreateRadialGradient(0) 崩潰
+                maxR: maxRadius,
+                state: 'growing', 
+                timer: 0,
+                maxWait: 35 
+            });
+        }
+
+        // 💥 粒子特效生成
+        function createExplosion(x, y, color) {
+            for (let i = 0; i < 8; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2 + Math.random() * 4;
+                particles.push({
+                    x: x, y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 1.0,
+                    color: color
+                });
+            }
+        }
+
+        /* =========================================
+           📱 觸控/滑鼠點擊攔截防禦
+           ========================================= */
+        function handlePointerDown(e) {
+            if (gameState !== 'playing') return;
+            if (e.target.closest('.game-console') || e.target.closest('widget-nav')) return;
+            e.preventDefault();
+
+            initAudio(); 
+
+            // Pointer 事件自帶 clientX / clientY
+            const clientX = e.clientX;
+            const clientY = e.clientY;
+
+            stats.clicks++;
+            let hitTarget = null;
+
+            for (let i = targets.length - 1; i >= 0; i--) {
+                let t = targets[i];
+                if (Math.hypot(clientX - t.x, clientY - t.y) <= t.r + 10) { // 放寬手機觸控判定範圍
+                    hitTarget = t;
+                    targets.splice(i, 1);
+                    break;
+                }
+            }
+
+            if (hitTarget) {
+                stats.hits++;
+                playSound('hit');
+                createExplosion(hitTarget.x, hitTarget.y, 'var(--hit-color)');
+                crosshairs.push({ x: clientX, y: clientY, life: 1.0, type: 'hit' });
+                if (navigator.vibrate) navigator.vibrate(10);
+            } else {
+                playSound('miss');
+                crosshairs.push({ x: clientX, y: clientY, life: 1.0, type: 'miss' });
+            }
+            updateHUD();
+        }
+
+        // 使用 pointerdown 完美兼容所有裝置，不會雙重觸發
+        canvas.addEventListener('pointerdown', handlePointerDown, { passive: false });
+
+        /* =========================================
+           🎨 渲染與動畫循環
+           ========================================= */
+        function renderLoop() {
+            ctx.fillStyle = 'var(--bg-color)';
+            ctx.fillRect(0, 0, width, height);
+
+            if (gameState === 'playing') {
+                // 1. 更新與繪製標靶
+                for (let i = targets.length - 1; i >= 0; i--) {
+                    let t = targets[i];
+                    
+                    if (t.state === 'growing') {
+                        t.r += (t.maxR - t.r) * 0.3;
+                        if (t.maxR - t.r < 0.5) { t.r = t.maxR; t.state = 'waiting'; }
+                    } else if (t.state === 'waiting') {
+                        t.timer++;
+                        if (t.timer > t.maxWait) t.state = 'shrinking';
+                    } else if (t.state === 'shrinking') {
+                        t.r *= 0.8;
+                        if (t.r < 1) {
+                            stats.dropped++;
+                            targets.splice(i, 1);
+                            continue;
+                        }
+                    }
+
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(t.x, t.y, t.r, 0, Math.PI * 2);
+                    
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = 'var(--target-glow)';
+                    
+                    // 確保 t.r 大於 0 才繪製漸層，這是一道保險防線
+                    if (t.r > 0) {
+                        let grad = ctx.createRadialGradient(t.x, t.y, t.r*0.2, t.x, t.y, t.r);
+                        if (t.state === 'shrinking') {
+                            grad.addColorStop(0, '#f59e0b');
+                            grad.addColorStop(1, 'rgba(245, 158, 11, 0.4)');
+                            ctx.shadowColor = 'rgba(245, 158, 11, 0.6)';
+                        } else {
+                            grad.addColorStop(0, '#bae6fd');
+                            grad.addColorStop(1, 'var(--target-color)');
+                        }
+                        ctx.fillStyle = grad;
+                        ctx.fill();
+                    }
+
+                    // 標靶內核
+                    ctx.fillStyle = '#0f172a';
+                    ctx.beginPath(); ctx.arc(t.x, t.y, t.r * 0.4, 0, Math.PI * 2); ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            // 2. 繪製點擊準星反饋
+            for (let i = crosshairs.length - 1; i >= 0; i--) {
+                let c = crosshairs[i];
+                c.life -= 0.05;
+                if (c.life <= 0) { crosshairs.splice(i, 1); continue; }
+
+                ctx.save();
+                ctx.globalAlpha = c.life;
+                ctx.strokeStyle = c.type === 'hit' ? 'var(--hit-color)' : 'var(--miss-color)';
+                ctx.lineWidth = 2;
+                const size = 15 + (1 - c.life) * 10;
+                
+                ctx.beginPath();
+                ctx.moveTo(c.x - size, c.y); ctx.lineTo(c.x + size, c.y);
+                ctx.moveTo(c.x, c.y - size); ctx.lineTo(c.x, c.y + size);
+                ctx.stroke();
+                
+                if (c.type === 'miss') {
+                    ctx.beginPath(); ctx.arc(c.x, c.y, size * 0.5, 0, Math.PI*2); ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            // 3. 繪製爆炸粒子
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx; p.y += p.vy;
+                p.vx *= 0.9; p.vy *= 0.9; 
+                p.life -= 0.05;
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, p.life);
+                ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
+
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        requestAnimationFrame(renderLoop);
+    </script>
+</body>
+</html>

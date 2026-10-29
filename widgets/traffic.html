@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>遊戲交通燈 | 配記</title>
+    <style>
+        body { margin:0; background:#1A1A1A; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-family: sans-serif; user-select:none; }
+        
+        .top-nav { position: fixed; top: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; z-index: 100; pointer-events: none; }
+        .nav-btn { pointer-events: auto; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); color: white; text-decoration: none; padding: 10px 20px; border-radius: 50px; font-weight: bold; font-size: 1rem; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; }
+        
+        .traffic-box { background: #333; padding: 40px; border-radius: 50px; border: 4px solid #444; box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 10px 30px rgba(0,0,0,0.5); cursor: pointer; transition: transform 0.1s; }
+        .traffic-box:active { transform: scale(0.98); }
+
+        .light { width: clamp(120px, 30vw, 200px); height: clamp(120px, 30vw, 200px); border-radius: 50%; margin: 20px 0; opacity: 0.15; transition: all 0.2s; border: 6px solid #222; box-shadow: inset 0 0 20px rgba(0,0,0,0.8); }
+        .red { background-color: #FF3B30; }
+        .green { background-color: #34C759; }
+        
+        /* 發光狀態 */
+        .active.red { opacity: 1; background-color: #FF453A; box-shadow: 0 0 80px #FF3B30, inset 0 0 20px #fff; border-color: #FF453A; }
+        .active.green { opacity: 1; background-color: #32D74B; box-shadow: 0 0 80px #34C759, inset 0 0 20px #fff; border-color: #32D74B; }
+
+        .hint { color: #666; margin-top: 30px; font-size: 1.2rem; letter-spacing: 2px; }
+
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(5px); }
+        .modal-content { background: white; color: #333; padding: 30px; border-radius: 20px; max-width: 400px; }
+        .modal-content h2 { margin-top: 0; color: #34C759; }
+        .close-btn { width: 100%; background: #333; color: white; border: none; padding: 12px; border-radius: 12px; font-size: 1rem; font-weight: bold; margin-top: 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="top-nav">
+        <a href="../index.html" class="nav-btn">← 首頁</a>
+        <button class="nav-btn" onclick="toggleInfo(event)">ℹ️ 說明書</button>
+    </div>
+
+    <div class="traffic-box" onclick="toggleLight()">
+        <div id="red" class="light red active"></div>
+        <div id="green" class="light green"></div>
+    </div>
+    
+    <div class="hint">👆 點擊切換燈號</div>
+
+    <div id="infoModal" class="modal" onclick="toggleInfo(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2>🚦 視覺化遊戲交通燈</h2>
+            <p><strong>應用場景：</strong></p>
+            <p>1. <strong>特殊需要學童 (SEN)：</strong> 運用清晰的視覺信號（紅停、綠行）代替口頭指令，協助建立規則意識。<br>
+               2. <strong>聽障人士活動：</strong> 克服環境噪音或聽力障礙，作為大會的無障礙視覺提示工具。<br>
+               3. <strong>集體遊戲：</strong> 經典「123紅綠燈」的數碼輔助工具，只需一部 iPad 即可控制全場節奏。</p>
+            <button class="close-btn" onclick="toggleInfo(event)">開始控制</button>
+        </div>
+    </div>
+
+    <script>
+        let isRed = true;
+        function toggleInfo(e) {
+            if(e) e.stopPropagation();
+            const modal = document.getElementById('infoModal');
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        }
+        function toggleLight() {
+            isRed = !isRed;
+            document.getElementById('red').className = isRed ? 'light red active' : 'light red';
+            document.getElementById('green').className = isRed ? 'light green' : 'light green active';
+        }
+    </script>
+</body>
+</html>

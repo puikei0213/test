@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>多巴胺彈簧阻斷儀 | 配記 Pui-Kei</title>
+    <style>
+        /* 🛡️ 核心防禦 CSS：100% 封鎖網頁原生滾動與手勢誤觸 */
+        :root {
+            --bg-matrix: #04060a;
+            --panel-bg: rgba(9, 11, 18, 0.9);
+            --border-glow: rgba(6, 182, 212, 0.2);
+            --text-slate: #cbd5e1;
+            --primary-cyan: #06b6d4;
+            --accent-purple: #a855f7;
+            --color-strain: #ef4444;
+            --color-calm: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-matrix);
+            color: var(--text-slate);
+            height: 100dvh;
+            width: 100vw;
+            overflow: hidden;
+            position: relative;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none; /* 全域鎖定手勢 */
+        }
+
+        /* 核心互動主體 */
+        #field-stage {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ⚠️ 局部解鎖：阻尼調校面板（套用 iOS 安全區 padding 規範） */
+        .brake-console {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--panel-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-top: 1px solid var(--border-glow);
+            /* ⚠️ iOS 安全區底線防護額外加高 */
+            padding: 16px 20px calc(50px + env(safe-area-inset-bottom));
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .row-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #94a3b8;
+            width: 75px;
+            text-align: right;
+        }
+
+        /* ⚠️ 局部解鎖：明確為 range 注入 touch-action: auto */
+        input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.08);
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+            touch-action: auto; /* 局部解鎖觸控 */
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary-cyan);
+            box-shadow: 0 0 10px var(--primary-cyan);
+            cursor: pointer;
+        }
+
+        .brake-btn {
+            background: rgba(6, 182, 212, 0.12);
+            border: 1px solid var(--border-glow);
+            color: #e0f2fe;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .brake-btn:active { transform: scale(0.95); }
+
+        /* 即時認知反饋列 */
+        .scroll-feedback {
+            position: absolute;
+            top: 85px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(4, 6, 10, 0.85);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            text-align: center;
+            z-index: 10;
+            pointer-events: none;
+            width: 85%;
+            max-width: 360px;
+            line-height: 1.4;
+            font-weight: 600;
+        }
+
+        /* 自訂標籤外殼骨架 */
+        widget-nav, widget-modal { display: block; }
+
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px;
+        }
+        .modal-overlay.show { display: flex; }
+    </style>
+</head>
+<body>
+
+    <widget-nav title="多巴胺彈簧阻斷儀" back-link="../index.html"></widget-nav>
+
+    <div class="scroll-feedback" id="feedback-bar">
+        在本能地「向上滑屏」時，感受反向重力彈簧的拉扯阻力。
+    </div>
+
+    <div id="field-stage">
+        <canvas id="scrollCanvas"></canvas>
+    </div>
+
+    <div class="brake-console">
+        <div class="control-row">
+            <span class="row-label">多巴胺阻尼</span>
+            <input type="range" id="spring-slider" min="3" max="15" value="6">
+            <button class="brake-btn" onclick="resetSpringField()">重置場域</button>
+        </div>
+    </div>
+
+    <widget-modal id="info-modal" title="⚓ 多巴胺彈簧阻斷儀說明">
+        <div style="line-height: 1.7; color: #cbd5e1; font-size: 0.95rem;">
+            <p style="margin-bottom: 12px;">本工具專為<strong>網絡與短視頻成癮、無意識數位刷屏（Doomscrolling）</strong>或伴隨焦慮多動特質的青年設計，利用動態反向彈簧力學重塑行為覺察：</p>
+            <ul style="padding-left: 20px; margin-bottom: 15px;">
+                <li style="margin-bottom: 8px;"><strong>無意識刷屏干擾：</strong> 畫面上模擬多個動態快訊卡片。當青年人陷入焦慮、本能地以高頻率「向上快滑」試圖獲取新卡片時，系統會觸發物理反彈。滑得越快，向下的彈簧拉扯力就幾何級數上升，將卡片狠狠拉回原地。</li>
+                <li style="margin-bottom: 8px;"><strong>打破快節奏慣性：</strong> 這種突如其來的「物理阻力」能強行中斷大腦自動化的盲目滑動慣性，強迫案主停下來，直觀覺察到自己此時此刻的急躁與空虛。</li>
+                <li style="margin-bottom: 8px;"><strong>定心正向調和音：</strong> 只有當青年人放慢速度，改用「溫和、慢速的劃動或長按」時，阻力才會消退，系統亮起翡翠綠光，並觸發 528Hz 舒緩音頻，引導神經系統從亢奮回歸平穩。</li>
+            </ul>
+            <p style="font-size: 0.85rem; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+                💡 應用提示：適合網癮輔導、青年外展或情緒小組。當個案在面談中習慣性逃避問題、不斷拿出手機無意義刷屏時，引導他們在此畫布上感受「行為被拉扯」的物理隱喻，開展注意力重塑對話。
+            </p>
+        </div>
+    </widget-modal>
+
+    <script>
+        const canvas = document.getElementById('scrollCanvas');
+        const ctx = canvas.getContext('2d');
+        const feedbackBar = document.getElementById('feedback-bar');
+        const springSlider = document.getElementById('spring-slider');
+
+        let width, height;
+        let cards = [];
+        let particles = [];
+        let pointer = { startY: 0, currentY: 0, isDown: false, velocityY: 0, lastY: 0 };
+        let globalSpringK = 0.06; // 彈簧彈性係數
+        let fieldStrain = 0;      // 當前場域緊繃張量
+        let audioCtx;
+
+        function initCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            if (cards.length === 0) generateScrollCards();
+        }
+        window.addEventListener('resize', initCanvas);
+
+        function generateScrollCards() {
+            cards = [];
+            const cardCount = 4;
+            const cardHeight = 140;
+            const spacing = 30;
+            const startY = height * 0.25;
+
+            for (let i = 0; i < cardCount; i++) {
+                cards.push({
+                    id: i,
+                    x: width * 0.1,
+                    y: startY + i * (cardHeight + spacing),
+                    targetY: startY + i * (cardHeight + spacing),
+                    origY: startY + i * (cardHeight + spacing),
+                    width: width * 0.8,
+                    height: cardHeight,
+                    color: `hsla(${200 + i * 25}, 70%, 45%, 0.45)`
+                });
+            }
+        }
+
+        function initAudioEngine() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        // ⚠️ 局部解鎖滑桿
+        springSlider.addEventListener('input', (e) => {
+            globalSpringK = parseInt(e.target.value) / 100;
+        });
+
+        function playBrakeTone(freq, duration = 0.3, volume = 0.04) {
+            if (!audioCtx) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(volume, audioCtx.currentTime + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration + 0.05);
+        }
+
+        function resetSpringField() {
+            initAudioEngine();
+            fieldStrain = 0;
+            pointer.velocityY = 0;
+            pointer.isDown = false;
+            particles = [];
+            generateScrollCards();
+            if (navigator.vibrate) navigator.vibrate(20);
+        }
+
+        // 📱 手機觸控防禦 JS 規範：100% 封鎖原生下拉橡皮筋，捕獲高頻滑動速度
+        window.addEventListener('pointerdown', (e) => {
+            if (e.target.closest('.brake-console') || e.target.closest('widget-nav')) return;
+            initAudioEngine();
+
+            pointer.isDown = true;
+            pointer.startY = e.clientY;
+            pointer.currentY = e.clientY;
+            pointer.lastY = e.clientY;
+            pointer.velocityY = 0;
+        }, { passive: false });
+
+        window.addEventListener('pointermove', (e) => {
+            if (e.target.closest('.brake-console') || e.target.closest('widget-nav')) return;
+            e.preventDefault(); // 核心阻斷
+
+            if (pointer.isDown) {
+                pointer.currentY = e.clientY;
+                pointer.velocityY = e.clientY - pointer.lastY;
+                pointer.lastY = e.clientY;
+
+                const swipeUpDistance = pointer.startY - pointer.currentY;
+
+                if (swipeUpDistance > 0) {
+                    // 青年正在「向上盲目滑屏」
+                    // 計算滑動加速度帶來的內耗張力
+                    const speedFactor = Math.abs(pointer.velocityY);
+                    if (speedFactor > 15) {
+                        fieldStrain = Math.min(100, fieldStrain + speedFactor * 0.4);
+                    }
+                } else {
+                    // 向下滑動，溫和釋放部分焦慮張力
+                    fieldStrain = Math.max(0, fieldStrain - 2);
+                }
+            }
+        }, { passive: false });
+
+        window.addEventListener('pointerup', () => {
+            pointer.isDown = false;
+        });
+
+        let lastFeedbackText = "";
+        function triggerStrainFeedback(text, color) {
+            if (lastFeedbackText === text) return;
+            lastFeedbackText = text;
+            feedbackBar.innerText = text;
+            feedbackBar.style.color = color;
+        }
+
+        // 核心渲染與動態反向彈簧物理引擎
+        let tick = 0;
+        function renderLoop() {
+            tick++;
+            ctx.fillStyle = '#030509';
+            ctx.fillRect(0, 0, width, height);
+
+            // 張量自然緩慢釋放
+            if (tick % 8 === 0 && !pointer.isDown) {
+                fieldStrain = Math.max(0, fieldStrain - 1.5);
+            }
+
+            // 1. 認知線索與反饋判定
+            if (fieldStrain > 45) {
+                triggerStrainFeedback("⚠️ 偵測到無意識快滑！反向彈簧拉扯已鎖定，請放慢手速。", 'var(--color-strain)');
+                if (Math.random() < 0.06 && navigator.vibrate) navigator.vibrate([10, 20]);
+                if (Math.random() < 0.04) playBrakeTone(146.83, 0.2, 0.06); // D3 低悶反作用音
+            } else if (fieldStrain > 8) {
+                triggerStrainFeedback("⏳ 彈簧正在產生阻尼。大腦慣性被中斷，嘗試放緩呼吸。", 'var(--accent-purple)');
+            } else {
+                triggerStrainFeedback("✨ 成功放慢節奏！多巴胺迴路平穩，大腦重獲主動覺察。", 'var(--color-calm)');
+                if (Math.random() < 0.03 && pointer.isDown && Math.abs(pointer.velocityY) < 2) {
+                    playBrakeTone(528, 0.4, 0.02); // 釋放 528Hz 定心修復頻率
+                }
+            }
+
+            // 2. 核心：卡片物理學計算與彈簧回彈演算法（Kinetic Recoil）
+            const dragDelta = pointer.isDown ? (pointer.currentY - pointer.startY) : 0;
+            
+            cards.forEach(card => {
+                if (pointer.isDown) {
+                    if (dragDelta < 0) {
+                        // 向上滑：注入幾何級數上揚的反向彈簧阻力（卡片很難被拉上去）
+                        const resistance = 1 + (fieldStrain * 0.12);
+                        card.y = card.origY + (dragDelta / resistance);
+                    } else {
+                        // 向下滑：正常的流暢位移
+                        card.y = card.origY + dragDelta;
+                    }
+                } else {
+                    // 放手後，胡克定律反向胡克恢復力：強行將卡片拽回初始位置
+                    const springForce = (card.origY - card.y) * (globalSpringK + (fieldStrain * 0.005));
+                    card.targetY += springForce;
+                    card.y += (card.origY - card.y) * 0.18; // 快速平滑重置
+                }
+
+                // 繪製訊息快訊卡片意象
+                ctx.save();
+                const cardColor = fieldStrain > 45 ? 'var(--color-strain)' : card.color;
+                ctx.strokeStyle = cardColor;
+                ctx.lineWidth = fieldStrain > 45 ? 3 : 1.5;
+                ctx.shadowBlur = fieldStrain > 45 ? 20 : 6;
+                ctx.shadowColor = cardColor;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.01)';
+                
+                // 圓角卡片外殼
+                ctx.beginPath();
+                ctx.roundRect(card.x, card.y, card.width, card.height, 16);
+                ctx.fill();
+                ctx.stroke();
+
+                // 模擬內部訊息線條（低張力幾何）
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+                ctx.fillRect(card.x + 20, card.y + 25, card.width * 0.4, 12);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+                ctx.fillRect(card.x + 20, card.y + 55, card.width * 0.7, 8);
+                ctx.fillRect(card.x + 20, card.y + 75, card.width * 0.6, 8);
+                
+                // 發光能量條
+                ctx.fillStyle = cardColor;
+                ctx.globalAlpha = fieldStrain / 100;
+                ctx.fillRect(card.x + 20, card.y + card.height - 20, (card.width - 40) * (fieldStrain/100), 4);
+                ctx.restore();
+            });
+
+            // 3. 渲染覺察光芒粒子群
+            if (fieldStrain < 8 && Math.random() < 0.08) {
+                particles.push({
+                    x: Math.random() * width, y: height * 0.5 + (Math.random() - 0.5) * 100,
+                    vx: (Math.random() - 0.5) * 0.5, vy: -0.6 - Math.random() * 0.4,
+                    size: Math.random() * 1.5 + 1.2, alpha: 1, life: 80
+                });
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx; p.y += p.vy; p.life--;
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, p.life / 80);
+                ctx.fillStyle = 'var(--color-calm)';
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        initCanvas();
+        requestAnimationFrame(renderLoop);
+    </script>
+</body>
+</html>

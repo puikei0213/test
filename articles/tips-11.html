@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>Google I/O 2026 實測：用新一代 Gemini 多模態 AI 代理監聽對話，拯救前線社工嘅「個案紀錄地獄」 | 配記</title>
+    <meta name="robots" content="noindex, follow">
+    
+    <link rel="icon" type="image/png" href="/icon.png">
+    <link rel="apple-touch-icon" href="/icon-app.png">
+<script src="/components.js?v=8.3" defer></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="/style.css?v=8.2">
+    
+    <style>
+        body { background-color: #F8FAFC; color: #334155; }
+        .article-wrapper { max-width: 900px; margin: 40px auto; background: white; padding: 50px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .article-content { font-size: 1.15rem; line-height: 1.9; text-align: justify; }
+        .article-content p { margin-bottom: 25px; }
+        .article-content h2 { margin-top: 40px; color: #0066FF; border-left: 6px solid #0066FF; padding-left: 15px; font-size: 1.5rem; line-height: 1.4; font-weight: 700; }
+        .highlight-box { background: #F0F9FF; border: 1px solid #BAE6FD; padding: 25px; margin: 30px 0; border-radius: 12px; }
+        .data-point { color: #0066FF; font-weight: 700; font-size: 1.3rem; }
+        .article-tag { display: inline-block; font-size: 0.85rem; padding: 5px 12px; border-radius: 20px; font-weight: 700; margin-bottom: 15px; }
+        .highlight-quote { font-style: italic; color: #0D9488; font-size: 1.2rem; border-left: 3px dashed #0D9488; padding-left: 15px; margin: 25px 0; line-height: 1.6; }
+        .btn-outline { display: inline-block; padding: 10px 25px; border: 2px solid #0066FF; color: #0066FF; text-decoration: none; border-radius: 50px; font-weight: 700; transition: 0.2s; }
+        .btn-outline:hover { background: #0066FF; color: white; }
+        @media (max-width: 600px) { .article-wrapper { padding: 30px 20px; margin: 20px; } h1 { font-size: 1.8rem !important; } }
+    </style>
+</head>
+<body>
+    
+    <pui-kei-nav></pui-kei-nav>
+    
+    <main class="article-wrapper">
+        <header class="article-header">
+            <span class="article-tag" style="background:#FDF2F8; color:#9D174D;">AI 工具應用</span>
+            <h1 style="font-size: 2.5rem; margin: 20px 0; color: #1E293B; font-weight: 700; line-height: 1.3;">Google I/O 2026 實測：用新一代 Gemini 多模態 AI 代理監聽對話，拯救前線社工嘅「個案紀錄地獄」</h1>
+            <div style="color:#94A3B8; font-size: 0.95rem;">📅 2026年5月20日 | ✍️ 總編輯 puikei | ⏱️ 閱讀時間約 5 分鐘</div>
+        </header>
+
+        <div class="article-content">
+            <p><strong>【痛點故事開場】</strong> 喺深水埗一間長者鄰舍中心做咗五年嘅社工阿明，今晚八點鐘依然對住個電腦螢幕發呆。佢剛剛完成了兩位獨居長者嘅深度情緒輔導，個案情緒非常波動，談話內容充滿了零碎嘅生活困境：由身體痛楚、同非同住子女嘅張力，到天花板滲水引發嘅焦慮。阿明當時為了畀長者感受到百分之百嘅陪伴同眼神接觸，全程冇打開電腦，只用一張密密麻麻嘅草稿紙紀錄低關鍵詞。依家長者平安返咗屋企，但阿明嘅「真正勞役」先開始——佢要把這兩個鐘頭盤根錯節、充滿口語方言嘅閒談，轉化為社會福利署合規嘅「結構化個案紀錄（SOAP Progress Note）」。一想到後台系統個打字欄，同埋聽朝要交嘅進度報告，阿明嘆咗口氣，這就是前線同工日復一日、燃盡熱情的「紀錄地獄」。</p>
+
+            <p>這不是阿明一個人的困境。根據英國 Social Work England 喺 2026 年初發表嘅研究報告，全球社會工作者正承受著前所未前嘅文書倦怠（Burnout），大量寶貴嘅臨床時間被鎖死喺鍵盤前，無法用於建立人與人之間嘅真實連結。然而，剛剛舉行嘅 <strong>Google I/O 2026 科技大會</strong> 釋放咗一個革命性嘅訊號：AI 已經由被動嘅「聊天機器人」，進化為具備全感知能力嘅 <strong>「環境 AI 代理 (Ambient AI Agents)」</strong>。其中全新發布嘅 Gemini Omni 多模態架構與 Docs Live 功能，正正能幫前線同工打破這個僵局，讓「隱形科技」喺背景幫你打字，還你雙手去擁抱案主。</p>
+
+            <div style="background:#F1F5F9; border: 2px dashed #CBD5E1; border-radius:12px; height:250px; display:flex; align-items:center; justify-content:center; color:#94A3B8; margin:20px 0; text-align:center; padding:0 20px; font-style:italic;">
+                📸 [圖片位置：展示 Google I/O 2026 現場發布 Gemini Omni 多模態實時音訊與語意結構化功能之主視覺截圖]
+            </div>
+
+            <h2>乜嘢係「環境 AI 代理」與多模態融合？</h2>
+            <p>在過去一年，我們用 AI 寫紀錄，往往要先把錄音轉成逐字稿，再用複製貼上嘅方式餵給 ChatGPT 或 Claude 幫忙整理。這種「外掛式」操作依然繁瑣。而 2026 年最新嘅 <strong>Gemini Omni</strong> 實現了「原生多模態融合」——它能同時在背景「聽見」聲音、分析語氣、辨識說話者身份，並即時將非結構化嘅口語對話，歸納成邏輯嚴密嘅行政檔案。配合最新的 <strong>Docs Live</strong> 技術，同工只需要在面談時開啟語音授權，AI 就會像一位隱形嘅專業秘書，幫情完成 80% 嘅基礎起草工作。</p>
+
+            <div class="highlight-quote">
+                「2026 年，科技嘅終極形態係隱形。AI 負責處理重覆、結構化嘅『冷勞動』，讓我們將靈魂放回『有溫度嘅熱溝通』。」
+            </div>
+
+            <h2>手把手教學：如何利用 Gemini Omni 重塑個案面談工作流</h2>
+            <p>為了幫前線同工實操落地，我們將 2026 年最新功 Google Workspace 代理化功能拆解為以下四個具體操作步驟：</p>
+
+            <h2>1. 建立安全合規的「主權語音沙盒」</h2>
+            <p>在進行任何面談前，必須嚴格遵守數據隱私標準。打開已整合 Gemini 2.6 的機構 Workspace 賬戶，啟動「本地環境監聽（Ambient Capture）」功能。確保系統已開啟「去識別化（Anonymization）模式」，這時 AI 會自動將對話中涉及的真實姓名、身份證號碼、住址等敏感資訊，在晶片底層自動編碼為 [案主 A] 或 [去識別化地址]，確保符合社會工作倫理與數據主權要求。</p>
+
+            <h2>2. 開啟 Docs Live 進行「自然對話捕捉」</h2>
+            <p>面談開始時，將手機或平板電腦放在桌上。利用 2026 年全新嘅 Neural Expressive 介面，口頭激活：「Gemini，開啟個案輔導 Docs Live」。此時你不需要再看屏幕，只需百分之百投入與長者或家庭的互動。Gemini Omni 在背景會默默運作，它不僅記錄字面意思，還能透過「語音情緒特徵（Prosody Analysis）」偵測到長者講到某個話題時的吞吐、顫抖或長嘆，並在時間軸上自動標註「情緒轉折點」。</p>
+
+            <div style="background:#F1F5F9; border: 2px dashed #CBD5E1; border-radius:12px; height:250px; display:flex; align-items:center; justify-content:center; color:#94A3B8; margin:20px 0; text-align:center; padding:0 20px; font-style:italic;">
+                📸 [圖片位置：前線社工面談實景模擬圖。平板電腦放在一旁，屏幕顯示 Docs Live 正在背景以去識別化結構自動記錄對話時間軸與情緒標註]
+            </div>
+
+            <h2>3. 呼叫 Information Agent 執行 SOAP 結構化</h2>
+            <p>面談結束，送走長者後。打開剛生成的 Docs Live 頁面。在側邊欄對 Gemini 代理下達精準指令（同工可參考 puikei 之前的提示詞庫）：<em>「請根據剛才的對話逐字稿與情緒標註，將內容轉化為標準的 SOAP 個案紀錄。請著重分析 Subjective（案主自述的無助感）與 Objective（提到的天花板滲水及服藥不依從事實），並在 Assessment 中評估其社交孤立風險。」</em> 幾秒鐘內，一份原本要打兩個鐘頭嘅合規紀錄草稿便呈現在眼前。</p>
+
+            <h2>4. 人工覆核與「社交處方」微調</h2>
+            <p>正如業界專家一再強調，AI 工具本身並唔係具備理性思考嘅實體，佢哋只係高效嘅數據記憶庫。最後一步，亦係最關鍵嘅一步：阿明親自進行人工覆核。修改 AI 未必能精確理解的本地粵語俚語（例如長者講嘅「個心拿住拿住」指的心前區不適），確認無誤後，一鍵匯入機構的 EPR（電子個案管理系統）。此時，AI 還會根據最新的社區資料庫，主動在 Plan（行動計劃）中建議對接鄰近的維修義工隊資源。</p>
+
+            <h2>結論：配合己用，己得所用</h2>
+            <p>科技的爆發，從來不是為了消滅人文關懷，而是為了把被行政枷鎖禁錮的同理心重新解放出來。2026 年的今天，當 Google I/O 讓我們看見 AI 代理如何像空氣一樣融入環境，前線社工阿明終於可以提早一小時收工，推開門，踏著月色回家。而那份充滿溫度、記錄著長者生命故事的個案冊，已經安全、公平、透明地儲存在系統中，默默守護著下一次的遇見。</p>
+        </div>
+
+        <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #E2E8F0; text-align: center;">
+            <p style="margin-bottom: 20px; color: #64748B;">想了解點樣為中心引入簡單嘅 MR 復康工具？歡迎喺許願池留言！</p>
+            <a href="../index.html" class="btn-outline">🏠 回到首頁</a>
+        </div>
+    </main>
+
+    <pui-kei-footer></pui-kei-footer>
+
+</body>
+</html>

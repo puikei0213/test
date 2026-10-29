@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>港式台牌番數表</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+HK:wght@300;400;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans HK"', 'sans-serif'],
+                        cyber: ['Rajdhani', 'sans-serif'],
+                    },
+                    colors: {
+                        cyber: {
+                            bg: '#050505',
+                            panel: '#0f0f13',
+                            border: '#1f1f2e',
+                            cyan: '#00f3ff',
+                            magenta: '#ff003c',
+                            yellow: '#fcee0a',
+                            muted: '#6b7280'
+                        }
+                    },
+                    boxShadow: {
+                        'neon-cyan': '0 0 10px rgba(0, 243, 255, 0.5), inset 0 0 5px rgba(0, 243, 255, 0.2)',
+                        'neon-magenta': '0 0 10px rgba(255, 0, 60, 0.5), inset 0 0 5px rgba(255, 0, 60, 0.2)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: theme('colors.cyber.bg');
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+            color: #e2e8f0;
+        }
+        
+        /* Custom Scrollbar for Cyberpunk feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: theme('colors.cyber.bg');
+        }
+        ::-webkit-scrollbar-thumb {
+            background: theme('colors.cyber.border');
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: theme('colors.cyber.cyan');
+        }
+
+        .glitch-effect:hover {
+            animation: glitch-skew 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
+        }
+
+        @keyframes glitch-skew {
+            0% { transform: skew(0deg); }
+            20% { transform: skew(-10deg); }
+            40% { transform: skew(10deg); }
+            60% { transform: skew(-5deg); }
+            80% { transform: skew(5deg); }
+            100% { transform: skew(0deg); }
+        }
+
+        .category-card {
+            transition: all 0.3s ease;
+        }
+        .category-card:hover {
+            border-color: theme('colors.cyber.cyan');
+            box-shadow: theme('boxShadow.neon-cyan');
+            transform: translateY(-2px);
+        }
+        
+        /* Smooth scrolling */
+        html { scroll-behavior: smooth; }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col font-sans selection:bg-cyber-cyan selection:text-black pb-20">
+
+    <header class="sticky top-0 z-50 bg-cyber-bg/90 backdrop-blur-md border-b border-cyber-border py-4 px-4 sm:px-6 shadow-lg">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="text-center sm:text-left">
+                <h1 class="font-sans text-3xl sm:text-4xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyber-cyan to-blue-500 pb-1">
+                    港式台牌番數表
+                </h1>
+            </div>
+            
+            <div class="flex flex-wrap items-center justify-center sm:justify-end gap-2 w-full sm:w-auto mt-4 sm:mt-0">
+                <div class="relative w-full sm:w-64">
+                    <input type="text" id="searchInput" placeholder="搜尋番數或牌型..." 
+                        class="w-full bg-cyber-panel border border-cyber-border text-white text-sm rounded-lg focus:ring-cyber-cyan focus:border-cyber-cyan block p-2.5 outline-none transition-all duration-300 placeholder-cyber-muted focus:shadow-neon-cyan">
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                        <svg class="w-4 h-4 text-cyber-cyan" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+                        </svg>
+                    </div>
+                </div>
+                <button id="toggleCustomBtn" class="flex-shrink-0 bg-cyber-yellow/10 border border-cyber-yellow/50 text-cyber-yellow hover:bg-cyber-yellow/20 p-2.5 rounded-lg transition-all duration-300 flex items-center justify-center h-[42px] w-[42px] sm:w-auto sm:px-4 shadow-[0_0_8px_rgba(252,238,10,0.3)]" title="隱藏/顯示特規">
+                    <svg id="customIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    <span id="toggleCustomText" class="text-sm font-bold hidden sm:inline ml-2">隱藏特規</span>
+                </button>
+                <button id="sortBtn" class="flex-shrink-0 bg-cyber-panel border border-cyber-border text-cyber-muted hover:text-cyber-cyan p-2.5 rounded-lg hover:border-cyber-cyan transition-all duration-300 flex items-center justify-center h-[42px] w-[42px] sm:w-auto sm:px-4" title="切換番數排序">
+                    <svg id="sortIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
+                    <span id="sortBtnText" class="text-sm font-bold hidden sm:inline ml-2">預設排序</span>
+                </button>
+                <a href="HKtwmjapp.html" class="flex-shrink-0">
+                    <button id="quizBtn" class="w-full bg-cyber-cyan/10 border border-cyber-cyan/50 text-cyber-cyan hover:bg-cyber-cyan/20 hover:shadow-neon-cyan p-2.5 rounded-lg transition-all duration-300 flex items-center justify-center h-[42px] w-[42px] sm:w-auto sm:px-4 shadow-[0_0_8px_rgba(0,243,255,0.3)]" title="前往練習器">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        <span class="text-sm font-bold hidden sm:inline ml-2">練習器</span>
+                    </button>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 mt-8">
+        <!-- Quick Stats/Info -->
+        <div id="customNotice" class="mb-8 p-4 rounded-xl border border-cyber-magenta/30 bg-cyber-magenta/5 text-sm sm:text-base text-gray-300 flex items-start gap-3 shadow-[0_0_15px_rgba(255,0,60,0.1)] transition-opacity duration-300">
+            <svg class="w-6 h-6 text-cyber-magenta flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <div>
+                <p class="font-bold text-cyber-magenta mb-1 font-cyber tracking-wider">特別規則</p>
+                <p>帶有 <span class="inline-block px-1.5 py-0.5 text-[10px] text-black bg-cyber-yellow font-bold rounded mx-1">特規</span> 標籤的項目為特別修訂的規則。包含自訂極限番數、花上花自摸及一炮多響等設定。</p>
+            </div>
+        </div>
+
+        <div class="mb-8 bg-cyber-panel border border-cyber-border rounded-xl p-5 shadow-lg relative overflow-hidden group">
+            <div class="absolute top-0 left-0 w-1 h-full bg-cyber-cyan group-hover:shadow-neon-cyan transition-shadow duration-300"></div>
+            <h2 class="font-cyber text-xl sm:text-2xl font-bold text-cyber-cyan tracking-widest mb-4 flex items-center gap-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                換牌機制
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-cyber-bg p-4 rounded-lg border border-cyber-border/60 hover:border-cyber-cyan/50 transition-colors">
+                    <h3 class="text-cyber-yellow font-bold mb-3 flex items-center gap-2">
+                        <span class="bg-cyber-yellow/10 text-cyber-yellow border border-cyber-yellow/20 px-2 py-1 rounded text-sm tracking-wider">東 / 西風圈</span>
+                    </h3>
+                    <ul class="list-none text-sm text-gray-200 space-y-2.5">
+                        <li class="flex items-start gap-2"><span class="text-cyber-yellow mt-0.5 font-bold">▸</span><span class="leading-relaxed">最多可擲 <strong class="text-white text-base">3次</strong> 骰子。</span></li>
+                        <li class="flex items-start gap-2"><span class="text-cyber-yellow mt-0.5 font-bold">▸</span><span class="leading-relaxed">每家順序自選 <strong class="text-white text-base">3隻牌</strong> 換給下家。</span></li>
+                    </ul>
+                </div>
+                <div class="bg-cyber-bg p-4 rounded-lg border border-cyber-border/60 hover:border-cyber-magenta/50 transition-colors">
+                    <h3 class="text-cyber-magenta font-bold mb-3 flex items-center gap-2">
+                        <span class="bg-cyber-magenta/10 text-cyber-magenta border border-cyber-magenta/20 px-2 py-1 rounded text-sm tracking-wider">南 / 北風圈</span>
+                    </h3>
+                    <ul class="list-none text-sm text-gray-200 space-y-2.5">
+                        <li class="flex items-start gap-2"><span class="text-cyber-magenta mt-0.5 font-bold">▸</span><span class="leading-relaxed">最多可擲 <strong class="text-white text-base">3次</strong> 骰子決定總換牌數量。</span></li>
+                        <li class="flex items-start gap-2"><span class="text-cyber-magenta mt-0.5 font-bold">▸</span><span class="leading-relaxed">順序自選其餘三家的牌，<strong class="text-cyber-magenta font-bold bg-cyber-magenta/10 px-1 rounded">前提必須每家都要取</strong>。</span></li>
+                        <li class="flex items-start gap-2"><span class="text-cyber-magenta mt-0.5 font-bold">▸</span><span class="leading-relaxed">若骰子總數為 <span class="text-black font-bold bg-gray-300 px-1.5 py-0.5 rounded">1-3</span>，視作最少換 <strong class="text-white text-base">3隻牌</strong> (每家最少被取1隻)。</span></li>
+                        <li class="flex items-start gap-2"><span class="text-cyber-magenta mt-0.5 font-bold">▸</span><span class="leading-relaxed">若骰子總數為 <span class="text-black font-bold bg-gray-300 px-1.5 py-0.5 rounded">4-6</span>，可自由組合取牌數量。</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Render Container for Javascript -->
+        <div id="rulesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Content injected by JS -->
+        </div>
+        
+        <!-- Empty State (Hidden by default) -->
+        <div id="emptyState" class="hidden text-center py-20">
+            <p class="font-cyber text-2xl text-cyber-muted tracking-widest">DATA NOT FOUND // 無相關牌型</p>
+        </div>
+    </main>
+
+    <script>
+        // Database of all rules
+        const rulesData = [
+            {
+                id: "basic",
+                title: "基礎與花牌",
+                subtitle: "BASIC & FLOWERS",
+                items: [
+                    { name: "無花", score: "1", desc: "完全沒有花牌" },
+                    { name: "正花", score: "2", desc: "花牌數字與自己坐位相同 (東1, 南2, 西3, 北4)" },
+                    { name: "爛花", score: "1", desc: "花牌數字與坐位不同" },
+                    { name: "一台花", score: "10", desc: "集齊四隻同系列的花 (春夏秋冬 或 梅蘭菊竹)" },
+                    { name: "兩台花 (花胡)", score: "30", desc: "集齊八隻花，可立刻食胡，不須計手上牌型" },
+                    { name: "聽牌 (叮)", score: "5", desc: "聲明已叫胡，不得轉章或暗槓，可看其他家的牌" },
+                    { name: "雞胡", score: "10", desc: "胡出時只得一番 (不計莊前)。如有聽牌/自摸則不當雞胡" },
+                    { name: "平胡", score: "3", desc: "沒有刻子，全部為順子", example: ['1m','2m','3m', ' ', '4p','5p','6p', ' ', '7s','8s','9s'] },
+                    { name: "門清", score: "3", desc: "門前清，沒有上或碰，暗槓亦可" },
+                    { name: "自摸", score: "1", desc: "自己摸牌食出" },
+                    { name: "門清自摸", score: "5", desc: "門前清狀態下自摸" },
+                    { name: "對碰", score: "2", desc: "叫胡時叫對碰", example: ['1m','1m', ' ', 'b','b'] },
+                    { name: "將眼", score: "2", desc: "以一對二、五或八做眼", example: ['2m','2m'] },
+                    { name: "獨獨", score: "2", desc: "單釣或叫偏章 (如卡窿、邊張)", example: ['3m'] },
+                    { name: "假獨", score: "1", desc: "本來是多面聽，但可以砌成叫單釣或偏章" },
+                ]
+            },
+            {
+                id: "winds",
+                title: "字牌與風牌",
+                subtitle: "WINDS & DRAGONS",
+                items: [
+                    { name: "碰出正風", score: "2", desc: "碰出與自己坐位相同的風牌刻子", example: ['e','e','e'] },
+                    { name: "碰出非正風", score: "1", desc: "碰出與坐位不同的風牌刻子", example: ['s','s','s'] },
+                    { name: "碰出中發白", score: "2", desc: "中、發或白板的刻子", example: ['c','c','c'] },
+                    { name: "將眼", score: "2", desc: "以一對二、五或八做眼", example: ['2m','2m'] },
+                    { name: "無字", score: "1", desc: "整副牌沒有任何番子" },
+                    { name: "無字花", score: "5", desc: "沒有番子及沒有花牌" },
+                    { name: "無字花平胡", score: "10", desc: "大平糊：無番子、無花、且是平胡", example: ['2m','3m','4m', ' ', '5p','6p','7p'] },
+                    { name: "小三元", score: "20", desc: "中、發、白其中兩組刻子及一對做眼", example: ['c','c','c', ' ', 'f','f','f', ' ', 'b','b'] },
+                    { name: "大三元", score: "40", desc: "中、發、白集齊三組刻子", example: ['c','c','c', ' ', 'f','f','f', ' ', 'b','b','b'] },
+                    { name: "小三風", score: "15", desc: "東、南、西、北其中兩組刻子及一對做眼", example: ['e','e','e', ' ', 's','s','s', ' ', 'w','w'] },
+                    { name: "大三風", score: "30", desc: "東、南、西、北其中三組刻子", example: ['e','e','e', ' ', 's','s','s', ' ', 'w','w','w'] },
+                    { name: "小四喜", score: "60", desc: "東、南、西、北其中三組刻子及一對做眼", example: ['e','e','e', ' ', 's','s','s', ' ', 'w','w','w', ' ', 'n','n'] },
+                    { name: "大四喜", score: "80", desc: "東、南、西、北集齊四組刻子", example: ['e','e','e', ' ', 's','s','s', ' ', 'w','w','w', ' ', 'n','n','n'] },
+                    { name: "字一色", score: "80", desc: "全副牌皆由番子（東南西北中發白）組成", example: ['e','e','e', ' ', 's','s','s', ' ', 'w','w','w', ' ', 'n','n','n', ' ', 'c','c','c', ' ', 'b','b'] }
+                ]
+            },
+            {
+                id: "triplets",
+                title: "刻子與對子",
+                subtitle: "TRIPLETS & PAIRS",
+                items: [
+                    { name: "二暗刻", score: "3", desc: "在自己手裡有兩組刻子 (暗槓亦算)", example: ['2p','2p','2p', ' ', '5s','5s','5s'] },
+                    { name: "三暗刻", score: "10", desc: "在自己手裡有三組刻子", example: ['2p','2p','2p', ' ', '5s','5s','5s', ' ', 'w','w','w'] },
+                    { name: "四暗刻", score: "30", desc: "在自己手裡有四組刻子", example: ['2p','2p','2p', ' ', '5s','5s','5s', ' ', 'w','w','w', ' ', '8m','8m','8m'] },
+                    { name: "五暗刻", score: "80", desc: "在自己手裡有五組刻子", example: ['2p','2p','2p', ' ', '5s','5s','5s', ' ', 'w','w','w', ' ', '8m','8m','8m', ' ', 'c','c','c'] },
+                    { name: "二兄弟", score: "5", desc: "兩款數字一樣的刻子 (例如3筒+3索)", example: ['3p','3p','3p', ' ', '3s','3s','3s'] },
+                    { name: "小三兄弟", score: "10", desc: "二兄弟再加上另一個同數字兄弟做眼", example: ['3m','3m','3m', ' ', '3p','3p','3p', ' ', '3s','3s'] },
+                    { name: "二姐妹", score: "5", desc: "兩副同款且數字相連的刻子", example: ['2m','2m','2m', ' ', '3m','3m','3m'] },
+                    { name: "大三兄弟", score: "15", desc: "三款數字一樣的刻子", example: ['3m','3m','3m', ' ', '3p','3p','3p', ' ', '3s','3s','3s'] },
+                    { name: "小三姊妹", score: "8", desc: "兩副同款且數字相連的刻子，加一對相連的眼", example: ['2m','2m','2m', ' ', '3m','3m','3m', ' ', '4m','4m'] },
+                    { name: "大三姊妹", score: "15", desc: "三副同款且數字相連的刻子 (例如222,333,444萬)", example: ['2m','2m','2m', ' ', '3m','3m','3m', ' ', '4m','4m','4m'] },
+                    { name: "對對胡", score: "30", desc: "全副牌皆是刻子 (碰碰糊)", example: ['1m','1m','1m', ' ', '4p','4p','4p', ' ', '7s','7s','7s', ' ', 'c','c'] },
+                    { name: "間間胡", score: "100", desc: "自摸門前對對糊", example: ['1m','1m','1m', ' ', '4p','4p','4p', ' ', '7s','7s','7s', ' ', 'c','c'] },
+                    { name: "嚦咕嚦咕", score: "40", desc: "八對子，如有三隻一樣不能碰出", example: ['1m','1m', ' ', '3p','3p', ' ', '5s','5s', ' ', '7m','7m', ' ', '9p','9p', ' ', 'e','e', ' ', 'c','c', ' ', 'f','f'] }
+                ]
+            },
+            {
+                id: "sequences",
+                title: "順子與同色",
+                subtitle: "SEQUENCES & SUITS",
+                items: [
+                    { name: "老少", score: "2", desc: "同門 123 加 789，或 111 加 999", example: ['1m','2m','3m', ' ', '7m','8m','9m'] },
+                    { name: "一般高", score: "3", desc: "兩個完全一樣的順子", example: ['2p','3p','4p', ' ', '2p','3p','4p'] },
+                    { name: "三般高", score: "15", desc: "三個完全一樣的順子", example: ['2p','3p','4p', ' ', '2p','3p','4p', ' ', '2p','3p','4p'] },
+                    { name: "四般高", score: "30", desc: "四個完全一樣的順子", example: ['2p','3p','4p', ' ', '2p','3p','4p', ' ', '2p','3p','4p', ' ', '2p','3p','4p'] },
+                    { name: "二相逢", score: "2", desc: "兩個款式不同但數字一樣的順子 (例如 123萬+123筒)", example: ['1m','2m','3m', ' ', '1p','2p','3p'] },
+                    { name: "三相逢", score: "10", desc: "三個款式不同但數字一樣的順子", example: ['1m','2m','3m', ' ', '1p','2p','3p', ' ', '1s','2s','3s'] },
+                    { name: "四同順", score: "20", desc: "四個數字一樣順子，不論款式，不再計相逢或般高", example: ['1m','2m','3m', ' ', '1p','2p','3p', ' ', '1s','2s','3s', ' ', '1m','2m','3m'] },
+                    { name: "五同順", score: "40", desc: "五個數字一樣順子，不論款式，不再計相逢或般高", example: ['1m','2m','3m', ' ', '1p','2p','3p', ' ', '1s','2s','3s', ' ', '1m','2m','3m', ' ', '1p','2p','3p', ' ', 'c','c'] },
+                    { name: "明龍", score: "10", desc: "同一款式集齊一至九，其中有上回來的牌", example: ['1m','2m','3m', ' ', '4m','5m','6m', ' ', '7m','8m','9m'] },
+                    { name: "暗龍", score: "20", desc: "同一款式一至九全部在手裡 (食胡那隻可由別人打出)", example: ['1m','2m','3m', ' ', '4m','5m','6m', ' ', '7m','8m','9m'] },
+                    { name: "明雜龍", score: "8", desc: "由三門不同款式組成一至九 (例如 123萬, 456筒, 789索)，有上牌", example: ['1m','2m','3m', ' ', '4p','5p','6p', ' ', '7s','8s','9s'] },
+                    { name: "暗雜龍", score: "15", desc: "由三門組成一至九，全部在手裡", example: ['1m','2m','3m', ' ', '4p','5p','6p', ' ', '7s','8s','9s'] },
+                    { name: "五門齊", score: "10", desc: "東南西北為一門，中發白為一門，筒索萬各一門。全副牌五門都有齊", example: ['1m','2m','3m', ' ', '4p','5p','6p', ' ', '7s','8s','9s', ' ', 'e','e','e', ' ', 'c','c'] },
+                    { name: "缺一門", score: "5", desc: "缺少筒、索或萬其中一門 (不計番子)" },
+                    { name: "混一色", score: "30", desc: "只有一門牌及番子", example: ['1m','2m','3m', ' ', '7m','8m','9m', ' ', 'c','c','c', ' ', 'e','e'] },
+                    { name: "清一色", score: "80", desc: "只有一門牌，完全沒有番子", example: ['1m','2m','3m', ' ', '4m','5m','6m', ' ', '7m','8m','9m', ' ', '9m','9m'] },
+                    { name: "斷么", score: "5", desc: "全副牌沒有一、九及番子", example: ['2m','3m','4m', ' ', '6p','7p','8p'] },
+                    { name: "全帶混么", score: "10", desc: "每一組合都有么九或番子", example: ['1m','2m','3m', ' ', '7s','8s','9s', ' ', 'c','c','c', ' ', 'w','w'] },
+                    { name: "全帶么", score: "15", desc: "每一組合都有么九，且無番子", example: ['1m','2m','3m', ' ', '7p','8p','9p', ' ', '1s','1s','1s', ' ', '9s','9s'] },
+                    { name: "混么", score: "30", desc: "全副牌都是么九刻子及番子 (混老頭)", example: ['1m','1m','1m', ' ', '9p','9p','9p', ' ', 'c','c','c', ' ', 'e','e'] },
+                    { name: "清么", score: "80", desc: "全副牌都是么九，無番子 (清老頭)", example: ['1m','1m','1m', ' ', '9p','9p','9p', ' ', '1s','1s','1s', ' ', '9s','9s'] }
+                ]
+            },
+            {
+                id: "kongs",
+                title: "槓牌與特殊摸打",
+                subtitle: "KONGS & DRAW SPECIALS",
+                items: [
+                    { name: "明槓", score: "1", desc: "自己摸到三隻，碰出第四隻；或手持暗刻，別人打出第四隻", example: ['4m','4m','4m','4m'] },
+                    { name: "暗槓", score: "2", desc: "自己摸到四張相同牌" },
+                    { name: "搶槓食胡", score: "1", desc: "別人加槓時食胡。當作被搶家出沖，加一番" },
+                    { name: "搶槓上槓食胡", score: "30", desc: "別人槓上槓時搶胡，當作該家出沖" },
+                    { name: "四歸一", score: "5", desc: "用盡同一隻牌的四隻牌 (未槓)", example: ['5s','5s','5s','5s'] },
+                    { name: "四歸二", score: "10", desc: "用盡四隻牌，其中兩隻做眼", example: ['5s','5s','5s','5s'] },
+                    { name: "四歸四", score: "20", desc: "用盡四隻牌做成順子", example: ['5s','5s','5s','5s'] },
+                    { name: "全求人", score: "15", desc: "全副牌落地，單釣由別人打出 (明槓可，暗槓不可)" },
+                    { name: "半求人", score: "8", desc: "全副牌落地，單釣自摸 (明槓可，暗槓不可)" },
+                    { name: "七只內", score: "20", desc: "拿走食胡牌後，海底只有七隻牌內食胡 (不計上碰)" },
+                    { name: "十只內", score: "10", desc: "拿走食胡牌後，海底只有十隻牌內食胡" },
+                    { name: "海底撈月", score: "10", desc: "最後一隻牌自摸", custom: true },
+                    { name: "槓上自摸", score: "1", desc: "開槓時自摸", custom: true },
+                    { name: "槓上槓自摸", score: "5", desc: "開槓後再開槓時自摸", custom: true },
+                    { name: "花上自摸", score: "1", desc: "摸花補牌時自摸", custom: true },
+                    { name: "花上花自摸", score: "5", desc: "連續摸花兩次或以上後自摸", custom: true }
+                ]
+            },
+            {
+                id: "limits",
+                title: "極限與特規",
+                subtitle: "LIMITS & CUSTOMS",
+                items: [
+                    { name: "十三么", score: "80", desc: "十三種么九及番子各一隻，加其中一隻做眼。不能上碰", example: ['1m','9m','1p','9p','1s','9s','e','s','w','n','c','f','b'] },
+                    { name: "十六不搭", score: "40", desc: "東南西北中發白，其他三門每樣三隻不相連(如1,4,9)，加一對眼", example: ['1m','4m','7m', ' ', '2p','5p','8p', ' ', '3s','6s','9s', ' ', 'e','s','w','n','c','f','b'] },
+                    { name: "天聽", score: "70", desc: "莊家起手或閒家第一隻牌即叫胡", custom: true },
+                    { name: "地聽", score: "40", desc: "閒家在第一圈內叫胡 (未有人上碰)", custom: true },
+                    { name: "天糊", score: "100", desc: "莊家一開牌補花後即吃糊", custom: true },
+                    { name: "地糊", score: "90", desc: "閒家第一次摸牌即自摸", custom: true },
+                    { name: "人糊", score: "80", desc: "閒家在四隻牌內吃胡", custom: true },
+                    { name: "一炮雙響", score: "10", desc: "一家出沖，兩家同時食胡", custom: true },
+                    { name: "一炮三響", score: "15", desc: "一家出沖，三家同時食胡", custom: true },
+                    { name: "炸糊", score: "50x3", desc: "食錯胡之嚴厲懲罰 (每家賠50番)", custom: true }
+                ]
+            }
+        ];
+
+        // Function to create HTML for Mahjong Tile Images dynamically
+        function createTileHTML(tileCode) {
+            if (tileCode === ' ') {
+                return `<span class="w-1.5 sm:w-2 inline-block"></span>`; // Creates logical spacing between groups
+            }
+            
+            const map = {
+                '1m': 'Man1', '2m': 'Man2', '3m': 'Man3', '4m': 'Man4', '5m': 'Man5', '6m': 'Man6', '7m': 'Man7', '8m': 'Man8', '9m': 'Man9',
+                '1p': 'Pin1', '2p': 'Pin2', '3p': 'Pin3', '4p': 'Pin4', '5p': 'Pin5', '6p': 'Pin6', '7p': 'Pin7', '8p': 'Pin8', '9p': 'Pin9',
+                '1s': 'Sou1', '2s': 'Sou2', '3s': 'Sou3', '4s': 'Sou4', '5s': 'Sou5', '6s': 'Sou6', '7s': 'Sou7', '8s': 'Sou8', '9s': 'Sou9',
+                'e': 'Ton', 's': 'Nan', 'w': 'Shaa', 'n': 'Pei',
+                'c': 'Chun', 'f': 'Hatsu', 'b': 'Haku'
+            };
+            
+            const fileName = map[tileCode];
+            if (!fileName) return '';
+            
+            // 加入了 bg-slate-200 象牙白底色及邊框，大幅提升暗黑背景下的對比度與立體感
+            return `<img src="https://cdn.jsdelivr.net/gh/FluffyStuff/riichi-mahjong-tiles@master/Regular/${fileName}.svg" alt="${tileCode}" class="w-5 h-7 sm:w-6 sm:h-[34px] inline-block shadow-sm rounded-[3px] bg-slate-200 border border-slate-400" />`;
+        }
+
+        const container = document.getElementById('rulesContainer');
+        const searchInput = document.getElementById('searchInput');
+        const emptyState = document.getElementById('emptyState');
+
+        const sortBtn = document.getElementById('sortBtn');
+        const sortBtnText = document.getElementById('sortBtnText');
+        const sortIcon = document.getElementById('sortIcon');
+        let currentSort = 'default';
+
+        const toggleCustomBtn = document.getElementById('toggleCustomBtn');
+        const toggleCustomText = document.getElementById('toggleCustomText');
+        const customIcon = document.getElementById('customIcon');
+        const customNotice = document.getElementById('customNotice');
+        let showCustom = true;
+
+        // Helper: Parse score strings
+        function parseScore(scoreStr) {
+            if (typeof scoreStr !== 'string') return 0;
+            const cleanStr = scoreStr.replace(/[^0-9x]/g, '');
+            if (cleanStr.includes('x')) {
+                const parts = cleanStr.split('x');
+                return parseInt(parts[0]) * parseInt(parts[1]);
+            }
+            return parseInt(cleanStr) || 0;
+        }
+
+        // Render Cards Function
+        function renderRules(data) {
+            container.innerHTML = '';
+            let hasResults = false;
+
+            data.forEach(category => {
+                if (category.items.length === 0) return;
+                hasResults = true;
+
+                // Create Category Card
+                const card = document.createElement('div');
+                card.className = 'category-card bg-cyber-panel border border-cyber-border rounded-xl overflow-hidden flex flex-col h-full';
+                
+                // Card Header
+                const header = document.createElement('div');
+                header.className = 'bg-cyber-border/50 px-4 py-3 border-b border-cyber-border flex justify-between items-baseline';
+                header.innerHTML = `
+                    <h2 class="text-lg font-bold text-white tracking-wide">${category.title}</h2>
+                    <span class="font-cyber text-xs text-cyber-cyan tracking-[0.2em] opacity-70">${category.subtitle}</span>
+                `;
+                
+                // Rules List
+                const list = document.createElement('ul');
+                list.className = 'divide-y divide-cyber-border/50 flex-grow';
+                
+                category.items.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = 'px-4 py-3 hover:bg-white/[0.02] transition-colors';
+                    
+                    const customBadge = item.custom ? 
+                        `<span class="ml-2 inline-block px-1.5 py-0.5 text-[10px] bg-cyber-yellow text-black font-bold rounded align-middle shadow-[0_0_8px_rgba(252,238,10,0.6)]">特規</span>` : '';
+
+                    // Generate graphical tile HTML if examples exist (微調了容器背景色，加強層次感)
+                    const exampleHtml = item.example && item.example.length > 0 ? 
+                        `<div class="mt-2.5 p-2 bg-black/60 rounded-md border border-cyber-border/80 flex flex-wrap gap-[1px] shadow-inner items-center">
+                            ${item.example.map(t => createTileHTML(t)).join('')}
+                        </div>` : '';
+
+                    li.innerHTML = `
+                        <div class="flex justify-between items-start mb-1">
+                            <h3 class="font-bold text-gray-100 flex items-center">${item.name} ${customBadge}</h3>
+                            <span class="font-cyber text-cyber-cyan font-bold text-lg bg-cyber-cyan/10 px-2 rounded min-w-[3rem] text-center border border-cyber-cyan/20 ml-3 shrink-0">${item.score}</span>
+                        </div>
+                        <p class="text-xs text-cyber-muted leading-relaxed">${item.desc}</p>
+                        ${exampleHtml}
+                    `;
+                    list.appendChild(li);
+                });
+
+                card.appendChild(header);
+                card.appendChild(list);
+                container.appendChild(card);
+            });
+
+            // Toggle Empty State
+            if (hasResults) {
+                emptyState.classList.add('hidden');
+            } else {
+                emptyState.classList.remove('hidden');
+            }
+        }
+
+        function updateView() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            
+            let processedData = rulesData.map(category => {
+                // 1. Filter Custom Rules first
+                let filteredItems = category.items;
+                if (!showCustom) {
+                    filteredItems = filteredItems.filter(item => !item.custom);
+                }
+
+                // 2. Search Filter
+                if (searchTerm) {
+                    filteredItems = filteredItems.filter(item => 
+                        item.name.toLowerCase().includes(searchTerm) || 
+                        item.desc.toLowerCase().includes(searchTerm) ||
+                        item.score.toString().includes(searchTerm)
+                    );
+                }
+                
+                // 3. Sort Logic
+                if (currentSort !== 'default') {
+                    filteredItems = [...filteredItems].sort((a, b) => {
+                        const scoreA = parseScore(a.score);
+                        const scoreB = parseScore(b.score);
+                        return currentSort === 'desc' ? scoreB - scoreA : scoreA - scoreB;
+                    });
+                }
+                
+                return { ...category, items: filteredItems };
+            });
+
+            renderRules(processedData);
+        }
+
+        // Event Listeners
+        searchInput.addEventListener('input', updateView);
+
+        sortBtn.addEventListener('click', () => {
+            // Toggle sort states: default -> desc -> asc -> default
+            if (currentSort === 'default') {
+                currentSort = 'desc';
+                sortBtnText.textContent = '番數由大至小';
+                sortBtn.classList.add('text-cyber-cyan', 'border-cyber-cyan');
+                sortBtn.classList.remove('text-cyber-muted');
+                sortIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path>`;
+            } else if (currentSort === 'desc') {
+                currentSort = 'asc';
+                sortBtnText.textContent = '番數由小至大';
+                sortIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 4l-4 4m0 0l-4-4m4 4V4"></path>`;
+            } else {
+                currentSort = 'default';
+                sortBtnText.textContent = '預設排序';
+                sortBtn.classList.remove('text-cyber-cyan', 'border-cyber-cyan');
+                sortBtn.classList.add('text-cyber-muted');
+                sortIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>`;
+            }
+            updateView();
+        });
+
+        toggleCustomBtn.addEventListener('click', () => {
+            showCustom = !showCustom;
+            if (showCustom) {
+                toggleCustomText.textContent = '隱藏特規';
+                toggleCustomBtn.classList.replace('text-cyber-muted', 'text-cyber-yellow');
+                toggleCustomBtn.classList.replace('border-cyber-border', 'border-cyber-yellow/50');
+                toggleCustomBtn.classList.replace('bg-cyber-panel', 'bg-cyber-yellow/10');
+                toggleCustomBtn.classList.add('shadow-[0_0_8px_rgba(252,238,10,0.3)]');
+                customIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>`;
+                customNotice.style.display = 'flex';
+            } else {
+                toggleCustomText.textContent = '顯示特規';
+                toggleCustomBtn.classList.replace('text-cyber-yellow', 'text-cyber-muted');
+                toggleCustomBtn.classList.replace('border-cyber-yellow/50', 'border-cyber-border');
+                toggleCustomBtn.classList.replace('bg-cyber-yellow/10', 'bg-cyber-panel');
+                toggleCustomBtn.classList.remove('shadow-[0_0_8px_rgba(252,238,10,0.3)]');
+                customIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>`;
+                customNotice.style.display = 'none';
+            }
+            updateView();
+        });
+
+        // Initial render on load
+        window.addEventListener('DOMContentLoaded', () => {
+            updateView();
+        });
+    </script>
+</body>
+</html>

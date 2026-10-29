@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>心情調色盤 | 配記</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --primary: #0066FF;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.8s ease;
+        }
+
+        /* 懸浮導航列 (Pui-Kei Style) */
+        .top-nav-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .nav-btn {
+            pointer-events: auto;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn:active { transform: scale(0.95); }
+
+        /* 畫布與內容 */
+        #main-stage {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        #particle-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .mood-ui {
+            z-index: 10;
+            text-align: center;
+            width: 85%;
+            max-width: 400px;
+        }
+
+        .mood-display {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 20px rgba(255,255,255,0.3));
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* 滑桿設計 */
+        .control-group {
+            background: var(--glass-bg);
+            padding: 25px;
+            border-radius: 30px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(15px);
+        }
+
+        input[type=range] {
+            width: 100%;
+            margin: 15px 0;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.1);
+            height: 8px;
+            border-radius: 5px;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+            cursor: pointer;
+        }
+
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 24px;
+            max-width: 450px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .close-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 12px;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-nav-layer">
+        <a href="../index.html" class="nav-btn">← 首頁</a>
+        <button class="nav-btn" onclick="document.getElementById('modal').style.display='flex'">ℹ️ 說明書</button>
+    </div>
+
+    <div id="main-stage">
+        <canvas id="particle-canvas"></canvas>
+        
+        <div class="mood-ui">
+            <div id="emoji" class="mood-display">😌</div>
+            <h2 id="mood-text" style="margin-bottom: 30px; letter-spacing: 2px;">平靜藍</h2>
+            
+            <div class="control-group">
+                <div class="label-row"><span>低落</span><span>高昂</span></div>
+                <input type="range" id="energy" min="0" max="100" value="50">
+                
+                <div class="label-row" style="margin-top:15px;"><span>憂鬱</span><span>愉悅</span></div>
+                <input type="range" id="positivity" min="0" max="100" value="50">
+            </div>
+            
+            <button class="nav-btn" style="margin-top: 30px; width: 100%; padding: 15px;" onclick="saveMood()">📸 生成心情紀錄</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal">
+        <div class="modal-content">
+            <h2 style="color: #38bdf8; margin-bottom: 15px;">🎨 心情調色盤說明</h2>
+            <p>這是一個非言語的情緒表達工具，特別為以下場景設計：</p>
+            <ul style="margin: 15px 0; padding-left: 20px; line-height: 1.6;">
+                <li><strong>輔導開場：</strong> 作為破冰，讓服務對象用色彩描述當下感受。</li>
+                <li><strong>兒童小組：</strong> 幫助難以言喻情緒的孩子直觀地「調出」心情。</li>
+                <li><strong>自我覺察：</strong> 每日記錄，觀察情緒色彩的流轉。</li>
+            </ul>
+            <p style="font-size: 0.9rem; opacity: 0.8;">拖動滑桿觀察背景色彩與粒子的變化，找出最貼近你的顏色。</p>
+            <button class="close-btn" onclick="document.getElementById('modal').style.display='none'">開始調色</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        const energySlider = document.getElementById('energy');
+        const posSlider = document.getElementById('positivity');
+        const emojiDisplay = document.getElementById('emoji');
+        const moodText = document.getElementById('mood-text');
+
+        let particles = [];
+        let w, h;
+
+        function init() {
+            w = canvas.width = window.innerWidth;
+            h = canvas.height = window.innerHeight;
+            particles = [];
+            for(let i=0; i<50; i++) particles.push(new Particle());
+        }
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * w;
+                this.y = Math.random() * h;
+                this.size = Math.random() * 5 + 2;
+                this.speedX = (Math.random() - 0.5) * 2;
+                this.speedY = (Math.random() - 0.5) * 2;
+            }
+            update(energy) {
+                const multiplier = (energy / 50);
+                this.x += this.speedX * multiplier;
+                this.y += this.speedY * multiplier;
+                if(this.x > w || this.x < 0 || this.y > h || this.y < 0) this.reset();
+            }
+            draw() {
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function updateMood() {
+            const energy = energySlider.value;
+            const positivity = posSlider.value;
+            
+            // 計算顏色：能量影響亮度，愉悅度影響色調
+            // Hue: 200 (藍) -> 60 (黃) -> 0 (紅)
+            const hue = 200 - (positivity * 2);
+            const saturation = 40 + (energy / 2);
+            const lightness = 20 + (positivity / 4);
+            
+            const color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+            document.body.style.backgroundColor = color;
+            
+            // 更新 Emoji 與文字
+            if (positivity > 70) {
+                emojiDisplay.innerText = energy > 70 ? "🤩" : "😇";
+                moodText.innerText = "愉悅亮橙";
+            } else if (positivity < 30) {
+                emojiDisplay.innerText = energy > 70 ? "😤" : "😔";
+                moodText.innerText = "深沈憂藍";
+            } else {
+                emojiDisplay.innerText = energy > 70 ? "⚡" : "😌";
+                moodText.innerText = "平衡中立";
+            }
+            
+            emojiDisplay.style.transform = `scale(${0.8 + (energy/100)})`;
+        }
+
+        function animate() {
+            ctx.clearRect(0,0,w,h);
+            const energy = energySlider.value;
+            particles.forEach(p => {
+                p.update(energy);
+                p.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+
+        function saveMood() {
+            alert(`心情已記錄！\n當前狀態：${moodText.innerText}\n這是一個很棒的覺察開始。`);
+        }
+
+        window.addEventListener('resize', init);
+        energySlider.addEventListener('input', updateMood);
+        posSlider.addEventListener('input', updateMood);
+
+        init();
+        updateMood();
+        animate();
+    </script>
+</body>
+</html>

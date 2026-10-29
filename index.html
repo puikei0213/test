@@ -2,897 +2,759 @@
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>美孚青年閣預約系統</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>配記 | 數碼活動小工具與社福同工資源</title>
+    <meta name="description" content="配記為香港社福同工整理即開即用的活動小工具、帶領貼士和數碼資源，方便在中心、小組或戶外活動使用。">
+    
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon-app.png">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="/style.css?v=7.7">
+    <script src="/components.js?v=8.3" defer></script>
+
     <style>
-        body { user-select: none; -webkit-user-select: none; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        @keyframes popIn {
-            0% { transform: scale(0.9); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        .animate-pop { animation: popIn 0.3s ease-out forwards; }
+        .article-card.hidden { display: none; }
+        .card.widget-hidden { display: none; }
+        .ai-note-card.hidden { display: none; }
         
-        /* 條款視窗的優雅滾動條 */
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .load-more-container { text-align: center; margin-top: 30px; }
+        .btn-load-more {
+            background-color: #F1F5F9; color: #64748B; border: none;
+            padding: 12px 30px; border-radius: 50px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s; font-size: 0.95rem;
+        }
+        .btn-load-more:hover { background-color: #E2E8F0; color: #334155; }
     </style>
 </head>
-<body class="bg-slate-50 h-[100dvh] flex flex-col font-sans overflow-hidden">
+<body>
 
-    <!-- 頂部導航列 -->
-    <header class="bg-gradient-to-r from-cyan-600 to-blue-600 text-white p-2 sm:p-4 shadow-md flex justify-between items-center shrink-0 z-10 gap-2">
-        <div class="flex items-center gap-2 sm:gap-4 shrink-0">
-            <!-- 官方 Logo -->
-            <div class="bg-white px-2 py-1 sm:px-4 sm:py-2 rounded-xl shadow-sm flex items-center shrink-0">
-                <img src="/icons/mflogo.png" alt="BGCA 美孚青少年綜合服務中心" class="h-6 sm:h-12 md:h-14 object-contain">
-            </div>
-            
-            <div class="border-l-2 border-white/30 pl-2 sm:pl-4 py-0.5 sm:py-1 shrink-0">
-                <h1 class="text-sm sm:text-xl md:text-2xl font-bold tracking-widest text-white/95 shadow-sm leading-tight">美孚青年閣</h1>
-                <p class="text-[9px] sm:text-xs opacity-90 tracking-wider mt-0.5 sm:mt-1 leading-tight">自助預約系統</p>
-            </div>
+    <pui-kei-nav></pui-kei-nav>
+
+    <header class="site-header">
+        <div class="sparkles-container">
+            <div class="sparkle s1">✦</div>
+            <div class="sparkle s2">✦</div>
+            <div class="sparkle s3">✦</div>
+            <div class="sparkle s4">✦</div>
+            <div class="sparkle s5">✦</div>
+            <div class="sparkle s6">✦</div>
         </div>
 
-        <button onclick="openRegModal()" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 sm:px-6 sm:py-3 rounded-xl font-bold shadow-lg flex items-center gap-1 sm:gap-2 transform transition hover:scale-105 border border-white/50 backdrop-blur-md animate-pulse ml-auto shrink-0">
-            <i class="fas fa-qrcode text-sm sm:text-lg"></i> 
-            <span class="hidden sm:inline">登記取 QR Code</span>
-            <span class="text-xs sm:hidden">登記</span>
-        </button>
-
-        <div class="text-right hidden md:block pl-4 shrink-0">
-            <div id="clock" class="text-xl font-bold tracking-wider">--:-- --</div>
-            <div id="date" class="text-sm opacity-90">--年--月--日</div>
+        <div class="container relative-z">
+            <img src="/logo.png" alt="配記 Pui-Kei Logo" class="hero-logo">
+            <div class="hero-badge">
+                <i class="fas fa-toolbox text-blue-500 mr-2"></i>社福界專屬・免安裝工具箱
+            </div>
+            <h1 class="hero-headline">一按即用的數碼活動百寶袋</h1>
+            <p class="brand-story">
+                <span class="story-line">無須下載，即開即用。</span>
+                <span class="story-line">助你輕鬆帶領活動，實踐「配合己用，己得所用」。</span>
+            </p>
+            <div class="hero-actions">
+                <a href="#tools" class="btn-hero-primary">
+                    <i class="fas fa-play mr-2"></i> 探索小工具
+                </a>
+                <a href="#articles" class="btn-hero-secondary">
+                    <i class="fas fa-book-open mr-2"></i> 閱讀文章專欄
+                </a>
+                <a href="#ai-prompts" class="btn-hero-secondary">
+                    <i class="fas fa-sparkles mr-2"></i> 瀏覽 AI 筆記
+                </a>
+            </div>
         </div>
     </header>
 
-    <!-- 主要內容區 -->
-    <main class="flex-1 flex flex-col md:flex-row p-4 sm:p-6 gap-6 overflow-y-auto md:overflow-hidden relative">
+    <main class="container">
         
-        <!-- 左側：時間表顯示 -->
-        <section class="w-full md:flex-1 bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex flex-col overflow-hidden border-t-4 border-t-emerald-500 min-h-[450px] md:min-h-0 shrink-0 md:shrink">
-            
-            <!-- 標題及圖例 -->
-            <div class="flex justify-between items-center mb-3 shrink-0">
-                <h2 class="text-xl sm:text-2xl font-bold text-gray-800 flex items-center"><i class="far fa-calendar-alt mr-3 text-emerald-600"></i>預約日期及時段</h2>
-                <div class="flex gap-2 sm:gap-4 text-xs sm:text-sm font-semibold">
-                    <span class="flex items-center gap-1 sm:gap-2 text-emerald-600"><div class="w-3 h-3 rounded-full bg-emerald-500"></div> <span class="hidden sm:inline">可預約</span><span class="sm:hidden">空閒</span></span>
-                    <span class="flex items-center gap-1 sm:gap-2 text-amber-500"><div class="w-3 h-3 rounded-full bg-amber-400"></div> <span class="hidden sm:inline">部份預約</span><span class="sm:hidden">部份</span></span>
-                    <span class="flex items-center gap-1 sm:gap-2 text-slate-400"><div class="w-3 h-3 rounded-full bg-slate-300"></div> <span class="hidden sm:inline">已滿</span><span class="sm:hidden">已滿</span></span>
+        <section class="usp-section" style="margin-top: 30px; margin-bottom: 40px;">
+            <div class="usp-grid">
+                <div class="usp-card">
+                    <div class="usp-icon">🔒</div>
+                    <h3>了解資料怎樣處理</h3>
+                    <p>部分工具會在瀏覽器內處理輸入；雲端 AI 或預約工具則可能把資料傳送到第三方服務。使用前請查看工具說明及<a href="/privacy.html">私隱政策</a>。</p>
                 </div>
-            </div>
-
-            <!-- 全新：跨日日期選擇器 (Date Selector) -->
-            <div id="date-selector-container" class="flex gap-2 overflow-x-auto custom-scrollbar pb-3 mb-3 shrink-0 scroll-smooth">
-                <!-- 這裡會由 JavaScript 自動生成未來 14 天的按鈕 -->
-            </div>
-            
-            <div id="schedule-container" class="flex-1 overflow-y-auto no-scrollbar space-y-3 pr-2 pb-2">
-                <!-- JavaScript 生成時間區塊 -->
+                <div class="usp-card">
+                    <div class="usp-icon">📴</div>
+                    <h3>主畫面捷徑不等於離線 App</h3>
+                    <p>加入主畫面只方便再次開啟網站；配記目前未有完整離線快取，活動前請先確認場地網絡。</p>
+                </div>
+                <div class="usp-card">
+                    <div class="usp-icon">⚡</div>
+                    <h3>免安裝即開即用</h3>
+                    <p>無需申請 IT 權限，無需安裝任何繁瑣軟件。專為前線同工度身訂造，打開網頁立即帶領活動。</p>
+                </div>
             </div>
         </section>
 
-        <!-- 右側：預約表單 -->
-        <section class="w-full md:w-1/3 md:min-w-[320px] bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex flex-col border-t-4 border-t-emerald-500 overflow-hidden shrink-0 md:shrink mb-6 md:mb-0 relative">
-            <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6 shrink-0 flex items-center"><i class="fas fa-bolt mr-3 text-emerald-500"></i>即時預約</h2>
+        <details class="install-guide">
+            <summary>📱 點擊查看：如何將此工具安裝到 iPad / 手機桌面？</summary>
+            <div class="guide-content">
+                <div class="guide-step">
+                    <h4>🍎 iPhone / iPad (Safari)</h4>
+                    <p>1. 點擊下方或上方的 <strong>「分享」</strong> 按鈕 <span class="icon">📤</span></p>
+                    <p>2. 向下滑動，選擇 <strong>「加入主畫面」</strong> (Add to Home Screen) <span class="icon">➕</span></p>
+                    <p>3. 按右上角的 <strong>「加入」</strong>，完成！</p>
+                </div>
+                <div class="guide-step">
+                    <h4>🤖 Android (Chrome)</h4>
+                    <p>1. 點擊右上角的 <strong>「選單」</strong> (三點) <span class="icon">⋮</span></p>
+                    <p>2. 選擇 <strong>「加到主畫面」</strong> (Add to Home screen) <span class="icon">📲</span></p>
+                    <p>3. 按 <strong>「新增」</strong>，完成！</p>
+                </div>
+                <p class="guide-note">💡 小貼士：加入主畫面會建立網站捷徑；顯示方式視乎裝置和瀏覽器，也不代表可以離線使用。</p>
+            </div>
+        </details>
+
+        <div class="category-filters">
+            <button class="filter-btn active" data-filter="all">全部顯示</button>
+            <button class="filter-btn" data-filter="mini-game">小遊戲</button>
+            <button class="filter-btn" data-filter="group">抽獎分組</button>
+            <button class="filter-btn" data-filter="game">遊戲工具</button>
+            <button class="filter-btn" data-filter="reaction">反應計分</button>
+            <button class="filter-btn" data-filter="relax">情緒放鬆</button>
+            <button class="filter-btn" data-filter="utility">實用行政</button>
+            <button class="filter-btn" data-filter="sen-mental">SEN</button>
+        </div>
+
+        <div class="grid-container" id="tools">
+            <article class="card" data-category="group">
+                <div class="card-icon-bg color-orange">🎲</div>
+                <div class="card-content">
+                    <h3>幸運號碼抽獎</h3>
+                    <p>全螢幕大字體，支援 1-100 自訂範圍。</p>
+                </div>
+                <a href="/widgets/draw.html" class="btn">立即開啟</a>
+            </article>
+            <article class="card" data-category="utility">
+                <div class="card-icon-bg color-green">💬</div>
+                <div class="card-content">
+                    <h3>WhatsApp 連結</h3>
+                    <p>輸入電話，自動生成連結方便發送。</p>
+                </div>
+                <a href="/widgets/whatsapp.html" class="btn">立即開啟</a>
+            </article>
+            <article class="card" data-category="utility">
+                <div class="card-icon-bg color-green">🖌️</div>
+                <div class="card-content">
+                    <h3>「PPT」內容提示詞產生器</h3>
+                    <p>選擇想要的風格，生成專業提示詞！</p>
+                </div>
+                <a href="/widgets/ppt_prompt.html" class="btn">立即開啟</a>
+            </article>
+            <article class="card" data-category="utility">
+                <div class="card-icon-bg color-yellow">
+                    🧠
+                </div>
+                <div class="card-content">
+                    <h3>簡易 MindMap 神器</h3>
+                    <p>自由拖拉、自動擴展的無限畫布心智圖工具。支援一鍵新增與刪除分支、視角縮放置中，並具備高畫質圖片匯出功能，隨時將腦力激盪化為清晰圖像。</p>
+                </div>
+                <a href="/widgets/mindmap.html" class="btn">立即開啟</a>
+            </article>
+            <article class="card" data-category="reaction">
+                <div class="card-icon-bg color-red">🏆</div>
+                <div class="card-content">
+                    <h3>紅藍大對決</h3>
+                    <p>雙隊伍計分，超大數字，點擊即加分。</p>
+                </div>
+                <a href="/widgets/scoreboard.html" class="btn">立即開啟</a>
+            </article>
+            <article class="card" data-category="reaction">
+                <div class="card-icon-bg color-purple">⚡</div>
+                <div class="card-content">
+                    <h3>反應速度測試</h3>
+                    <p>看到綠燈立即按！訓練手眼協調。</p>
+                </div>
+                <a href="/widgets/reaction.html" class="btn">立即開啟</a>
+            </article>
+            <article class="card" data-category="game">
+                <div class="card-icon-bg color-yellow">🚦</div>
+                <div class="card-content">
+                    <h3>遊戲交通燈</h3>
+                    <p>視覺化指令，紅燈停、綠燈行。</p>
+                </div>
+                <a href="/widgets/traffic.html" class="btn">立即開啟</a>
+            </article>
+            <article class="card" data-category="relax">
+                <div class="card-icon-bg color-blue">🧘</div>
+                <div class="card-content">
+                    <h3>4-7-8 呼吸</h3>
+                    <p>跟隨圓圈縮放深呼吸，放鬆情緒。</p>
+                </div>
+                <a href="/widgets/breathe.html" class="btn">立即開啟</a>
+            </article>
+            <article class="card" data-category="reaction">
+                <div class="card-icon-bg color-purple">🎯</div>
+                <div class="card-content">
+                    <h3>幻彩追蹤</h3>
+                    <p>鍛鍊手眼協調與視覺專注的反應力挑戰。</p>
+                </div>
+                <a href="/widgets/color-tracker.html" class="btn">立即開啟</a>
+            </article>
+            <article class="card" data-category="game">
+                <div class="card-icon-bg color-blue">🖌️</div>
+                <div class="card-content">
+                    <h3>網上白板</h3>
+                    <p>簡單的網上畫板，方便在 iPad 上寫字展示或畫猜。</p>
+                </div>
+                <a href="/widgets/whiteboard.html" class="btn">立即開啟</a>
+            </article>
+            <article class="card" data-category="relax">
+                <div class="card-icon-bg color-orange">🧘‍♂️</div>
+                <div class="card-content">
+                    <h3>星塵流體</h3>
+                    <p>輕滑指尖星塵，AI 專屬聲光療癒，讓疲憊大腦深呼吸。</p>
+                </div>
+                <a href="/widgets/relax001.html" class="btn">立即開啟</a>
+            </article>
+            <article class="card" data-category="relax">
+                <div class="card-icon-bg color-red">🗑️</div>
+                <div class="card-content">
+                    <h3>煩惱碎紙機</h3>
+                    <p>寫低負面情緒，透過視覺粉碎進行心理外化與釋放。</p>
+                </div>
+                <a href="/widgets/worry-shredder.html" class="btn">立即開啟</a>
+            </article>
+            <article class="card" data-category="game">
+                <div class="card-icon-bg color-yellow">🎈</div>
+                <div class="card-content">
+                    <h3>破冰波波池</h3>
+                    <p>戳破氣泡隨機回答有趣問題，帶動小組熱烈氣氛！</p>
+                </div>
+                <a href="/widgets/bubble-icebreaker.html" class="btn">立即開啟</a>
+            </article>
+            <article class="card" data-category="relax">
+                <div class="card-icon-bg color-blue">🎨</div>
+                <div class="card-content">
+                    <h3>心情調色盤</h3>
+                    <p>直覺色彩滑動，將複雜情緒化為可見光譜。</p>
+                </div>
+                <a href="/widgets/mood-palette.html" class="btn">立即開啟</a>
+            </article>
+            <article class="card" data-category="group">
+                <div class="card-icon-bg color-green">👥</div>
+                <div class="card-content">
+                    <h3>隨機分組器</h3>
+                    <p>輸入名單自動平均分組，公平公正節省時間。</p>
+                </div>
+                <a href="/widgets/group.html" class="btn">立即開啟</a>
+            </article>
+            <article class="card widget-hidden" data-category="mini-game">
+                <div class="card-icon-bg color-red">🃏</div>
+                <div class="card-content">
+                    <h3>記憶翻牌遊戲</h3>
+                    <p>訓練短期記憶，可自訂難度，認知訓練必備。</p>
+                </div>
+                <a href="/widgets/game_memory.html" class="btn">立即開啟</a>
+            </article>
+            <article class="card" data-category="mini-game">
+            <div class="card-icon-bg color-blue">🧠</div>
+            <div class="card-content">
+            <h3>數字密碼邏輯推理</h3>
+                <p>根據線索推斷 3 位數密碼，訓練邏輯推理與解難能力。</p>
+            </div>
+                <a href="/widgets/game_artifact.html" class="btn">立即開啟</a>
+            </article>
+                <article class="card widget-hidden" data-category="game">
+                <div class="card-icon-bg color-yellow">🔊</div>
+                <div class="card-content">
+                    <h3>活動音效板</h3>
+                    <p>掌聲、歡呼、答錯音效一鍵播放，帶動全場氣氛。</p>
+                </div>
+                <a href="/widgets/soundboard.html" class="btn">立即開啟</a>
+            </article>
             
-            <form id="booking-form" class="flex-1 flex flex-col gap-4 sm:gap-5 overflow-y-auto no-scrollbar pr-2 pb-2">
-                <input type="hidden" id="selected-time-id" value="">
-
-                <div>
-                    <label class="block text-gray-700 font-bold mb-2 text-xs sm:text-sm uppercase tracking-wider">1. 選擇時段</label>
-                    <div id="selected-time-display" class="w-full p-3 sm:p-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 text-center bg-gray-50 flex items-center justify-center gap-2 transition-all text-sm sm:text-base">
-                        <i class="fas fa-hand-pointer"></i> 請先點選左側可預約時段
-                    </div>
+           <article class="card widget-hidden" data-category="utility">
+                <div class="card-icon-bg color-purple">🎡</div>
+                <div class="card-content">
+                    <h3>一鍵抽籤</h3>
+                    <p>系統將會隨機抽籤並列出次序，最後一鍵匯出結果。</p>
                 </div>
+                <a href="/widgets/luckydraw.html" class="btn">立即開啟</a>
+            </article>
 
-                <!-- 選擇空間 (多選版) -->
-                <div id="zone-selection-container" class="hidden opacity-0 transition-opacity duration-300">
-                    <label class="block text-gray-700 font-bold mb-2 text-xs sm:text-sm uppercase tracking-wider flex justify-between items-end">
-                        <span>2. 選擇空間</span>
-                        <span class="text-[10px] text-emerald-600 font-normal normal-case"><i class="fas fa-check-double mr-1"></i>支援多選</span>
-                    </label>
-                    <div class="flex gap-2">
-                        <button type="button" id="btn-zone1" onclick="selectZone('zone1')" class="flex-1 py-3 px-2 rounded-xl border-2 border-gray-200 text-gray-400 font-bold transition-all text-center flex flex-col items-center justify-center gap-1 group">
-                            <i class="fas fa-gamepad text-2xl mb-1 group-hover:scale-110 transition-transform"></i>
-                            <span class="text-sm sm:text-base leading-none">CHILLZONE</span>
-                            <span class="text-[10px] font-normal leading-none opacity-80">(桌遊/打機)</span>
+            <article class="card widget-hidden" data-category="relax">
+                <div class="card-icon-bg color-purple">〰️</div>
+                <div class="card-content">
+                    <h3>生命波頻</h3>
+                    <p>敘事輔導工具。透過繪製動態波形描繪人生起伏，視覺化生命能量與經歷。</p>
+                </div>
+                <a href="/widgets/life-pulse.html" class="btn">立即開啟</a>
+            </article>
+
+            <article class="card widget-hidden" data-category="sen-mental">
+                <div class="card-icon-bg color-purple">🎭</div>
+                <div class="card-content">
+                    <h3>社交微調解碼儀</h3>
+                    <p>社交微表情與非言語線索特訓工具。透過多維情感光譜滑桿，協助自閉症光譜與特教學童拆解並解讀人際防衛信號。</p>
+                </div>
+                <a href="/widgets/social-cue-tuner.html" class="btn">立即開啟</a>
+            </article>
+
+            <article class="card" data-category="sen-mental">
+                <div class="card-icon-bg color-blue">
+                    🌊
+                </div>
+                <div class="card-content">
+                    <h3>寂靜深海解壓儀</h3>
+                    <p>多感官過載（Sensory Overload）沉浸調適工具。透過流體水母物理擴散與實時深海粉紅噪音，迅速阻斷並沈澱焦慮與外在雜音刺激。</p>
+                </div>
+                <a href="/widgets/abyssal-sensory-calmer.html" class="btn">立即開啟</a>
+            </article>
+
+            <article class="card" data-category="youth-addiction">
+                <div class="card-icon-bg color-cyan">
+                    ⚓
+                </div>
+                <div class="card-content">
+                    <h3>多巴胺彈簧阻斷儀</h3>
+                    <p>網絡成癮與盲目刷屏（Doomscrolling）心理調適工具。利用反向動力學重力彈簧演算法，物理化中斷高頻快滑慣性，引導注意力重獲覺察。</p>
+                </div>
+                <a href="/widgets/dopamine-scroll-braker.html" class="btn">立即開啟</a>
+            </article>
+
+        </div> <div class="load-more-container" style="margin-bottom: 60px;">
+            <button id="loadMoreWidgetsBtn" class="btn-load-more">查看更多工具 ↓</button>
+        </div>
+        
+        <section class="articles-section" id="articles">
+            <h2 class="section-title">📚 應用分享與貼士</h2>
+            <div class="articles-grid" id="articleList">
+                
+                <article class="article-card">
+                    <div class="article-tag tag-blue">歡迎投稿</div>
+                    <h3>分享你的數碼活動教案</h3>
+                    <p class="article-desc">如果你有使用這些工具的心得，歡迎投稿！我們會將你的經驗分享給更多同工。</p>
+                    <div class="article-meta">
+                        <span>置頂公告</span>
+                        <a href="/articles/tips-02.html" class="read-more">了解詳情 &rarr;</a>
+                    </div>
+                </article>
+                
+
+                
+<article class="article-card">
+                    <div class="article-tag" style="background:#DBEAFE; color:#1E40AF;">STEM 教育</div>
+                    <h3>不一定要望住螢幕：如何用 AI 幫小朋友學 Coding 邏輯？</h3>
+                    <p class="article-desc">用箭頭卡片和故事關卡帶小朋友練習編程邏輯；AI 可協助備課，活動內容仍由帶領者按年齡調整。</p>
+                    <div class="article-meta">
+                        <span>2026/04/24</span>
+                        <a href="/articles/tips-07.html" class="read-more">閱讀全文 &rarr;</a>
+                    </div>
+                </article>
+
+                <article class="article-card">
+                    <div class="article-tag" style="background:#FEF08A; color:#854D0E;">青年工作</div>
+                    <h3>用 AI 圖像作為青年活動的表達引子</h3>
+                    <p class="article-desc">以圖像作為可選的對話起點，尊重青年是否參與；文章亦提醒不要把 AI 圖像當成心理評估或輸入個人資料。</p>
+                    <div class="article-meta">
+                        <span>2026/04/23</span>
+                        <a href="/articles/tips-06.html" class="read-more">閱讀全文 &rarr;</a>
+                    </div>
+                </article>
+                
+                <article class="article-card">
+                    <div class="article-tag">實戰技巧</div>
+                    <h3>如何利用 iPad 帶領長者進行認知訓練？</h3>
+                    <p class="article-desc">分享 3 個帶領活動時的小技巧，讓不熟悉科技的長者也能投入數碼遊戲，增加互動樂趣。</p>
+                    <div class="article-meta">
+                        <span>2026/01/12</span>
+                        <a href="/articles/tips-01.html" class="read-more">閱讀全文 &rarr;</a>
+                    </div>
+                </article>
+                
+                 <article class="article-card">
+                    <div class="article-tag">新手教學</div>
+                    <h3>第一次使用 WhatsApp 連結生成器？</h3>
+                    <p class="article-desc">教你如何將連結發送到 Broadcast List，一次過通知所有會員活動安排。</p>
+                    <div class="article-meta">
+                        <span>2026/01/10</span>
+                        <a href="/articles/tips-03.html" class="read-more">閱讀全文 &rarr;</a>
+                    </div>
+                </article>
+
+                <article class="article-card">
+                    <div class="article-tag">活動設計</div>
+                    <h3>紅藍大對決：適合輪椅使用者的玩法</h3>
+                    <p class="article-desc">不需要跑動，只需要舉手或按鈴，讓行動不便的長者也能享受競技樂趣。</p>
+                    <div class="article-meta">
+                        <span>2026/01/08</span>
+                        <a href="/articles/tips-04.html" class="read-more">閱讀全文 &rarr;</a>
+                    </div>
+                </article>
+
+                 <article class="article-card">
+                    <div class="article-tag">小貼士</div>
+                    <h3>如何將配記加到手機主畫面？</h3>
+                    <p class="article-desc">主畫面捷徑方便下次開啟，但不會自動令網站支援離線；了解使用前要留意甚麼。</p>
+                    <div class="article-meta">
+                        <span>2026/01/05</span>
+                        <a href="/articles/tips-05.html" class="read-more">閱讀全文 &rarr;</a>
+                    </div>
+                </article>
+                
+            </div>
+            <div class="load-more-container">
+                <button id="loadMoreBtn" class="btn-load-more">查看更多文章 ↓</button>
+            </div>
+        </section>
+
+        <section class="articles-section" id="ai-prompts" style="margin-top: 80px;">
+            <h2 class="section-title">✨ AI 筆記：社福同工專用指令</h2>
+            <p style="color: #64748B; margin-bottom: 25px; padding-left: 10px;">用「角色＋對象＋任務＋限制＋輸出格式」寫清楚要求。請勿把可識別個人的個案資料貼到公開 AI 工具；輸出內容要由同工核對。</p>
+            
+            <div class="articles-grid" id="aiPromptList">
+
+                <article class="article-card ai-note-card">
+                    <div class="ai-note-header">
+                        <span class="article-tag" style="background:#FFF1F2; color:#9F1239;">資料保護</span>
+                        <button class="btn-copy-modern" onclick="copyAIPrompt(this, 'prompt-text-20260615')">
+                            📋 一鍵複製
                         </button>
-                        <button type="button" id="btn-zone2" onclick="selectZone('zone2')" class="flex-1 py-3 px-2 rounded-xl border-2 border-gray-200 text-gray-400 font-bold transition-all text-center flex flex-col items-center justify-center gap-1 group">
-                            <i class="fas fa-bullseye text-2xl mb-1 group-hover:scale-110 transition-transform"></i>
-                            <span class="text-sm sm:text-base leading-none">桌球 / 康樂棋</span>
-                            <span class="text-[10px] font-normal leading-none opacity-80">(限一組)</span>
-                        </button>
                     </div>
-                </div>
-
-                <div id="form-step-3" class="opacity-50 pointer-events-none transition-opacity duration-300">
-                    <label class="block text-gray-700 font-bold mb-2 text-xs sm:text-sm uppercase tracking-wider">3. 借用人稱呼</label>
-                    <input type="text" id="user-name" required placeholder="請輸入名字 (手動授權專用)" class="w-full p-3 sm:p-4 border border-gray-300 rounded-xl text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-shadow">
-                </div>
-
-                <div id="form-step-4" class="opacity-50 pointer-events-none transition-opacity duration-300">
-                    <label class="block text-gray-700 font-bold mb-2 text-xs sm:text-sm uppercase tracking-wider">4. 聯絡電話 (選填)</label>
-                    <input type="tel" id="user-phone" placeholder="只供內部紀錄" class="w-full p-3 sm:p-4 border border-gray-300 rounded-xl text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-shadow">
-                </div>
-
-                <div id="form-step-5" class="opacity-50 pointer-events-none transition-opacity duration-300">
-                    <label class="block text-gray-700 font-bold mb-2 text-xs sm:text-sm uppercase tracking-wider">5. 身份授權 (防亂填)</label>
-                    
-                    <div class="flex gap-2 mb-3 bg-gray-100 p-1 rounded-xl border border-gray-200">
-                        <button type="button" id="tab-scan" class="flex-1 py-1.5 sm:py-2 bg-emerald-500 text-white rounded-lg font-bold shadow-md transition-all text-sm sm:text-base"><i class="fas fa-qrcode mr-1"></i> 掃描 QR</button>
-                        <button type="button" id="tab-manual" class="flex-1 py-1.5 sm:py-2 text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded-lg font-bold transition-all text-sm sm:text-base"><i class="fas fa-keyboard mr-1"></i> 輸入代碼</button>
+                    <h3 class="ai-note-title">整理去識別化的會談筆記</h3>
+                    <p class="ai-prompt-text" id="prompt-text-20260615">
+                        <strong>[角色]</strong> 你是文字整理助手，不是社工或臨床專業人員。<br><br>
+                        <strong>[資料]</strong> 以下只會提供虛構或已充分去識別化的練習文字，不包含姓名、聯絡方式、機構名稱或可辨認個案的細節。<br><br>
+                        <strong>[任務]</strong> 請把文字整理成「已知資料」、「當事人表達」、「仍待確認」三部分。保留原意，不新增事實，不作診斷、風險評級或服務決定；資料不足時，請標示「需要由同工確認」。<br><br>
+                        <strong>[輸出要求]</strong> 用中性、簡潔的繁體中文，並提醒讀者這只是草稿，須由負責同工核對及按機構程序處理。
+                    </p>
+                </article>
+                
+                <article class="article-card ai-note-card">
+                    <div class="ai-note-header">
+                        <span class="article-tag" style="background:#DCFCE7; color:#166534;">溝通技巧</span>
+                        <button class="btn-copy-modern" onclick="copyAIPrompt(this, 'prompt-text-1')">📋 一鍵複製</button>
                     </div>
+                    <h3 class="ai-note-title">科技新聞「長者友善化」轉換器</h3>
+                    <p class="ai-prompt-text" id="prompt-text-1"><strong>[角色]</strong> 你是一位擅長用「講故事」方式溝通的長者中心社工。 <strong>[背景]</strong> 網上流傳很多關於新科技（如 AI、無人機）的新聞，但長者覺得很深奧，甚至感到焦慮。 <strong>[任務]</strong> 請將以下科技內容，轉化為 300 字內的廣東話口語稿。要求：不使用專業術語，用生活化比喻，重點說明這項科技如何改善長者生活。 <strong>[限制與注意事項]</strong> 如果解釋得太深，長者會覺得被時代拋棄，請確保語氣溫暖且充滿鼓勵。</p>
+                </article>
 
-                    <div id="scanner-view" class="w-full border-2 border-dashed border-emerald-300 rounded-xl overflow-hidden bg-slate-50 flex flex-col items-center justify-center relative min-h-[160px] sm:min-h-[200px]">
-                        <div id="reader" class="w-full h-full"></div>
-                        <div id="start-scan-overlay" class="absolute inset-0 bg-slate-900/80 text-white flex flex-col items-center justify-center cursor-pointer hover:bg-slate-900 transition-all z-10 backdrop-blur-sm">
-                            <i class="fas fa-camera text-3xl sm:text-4xl mb-2 sm:mb-3 text-emerald-400"></i>
-                            <span class="font-bold text-base sm:text-lg tracking-wider">點擊啟動掃描器</span>
-                        </div>
+                <article class="article-card ai-note-card">
+                    <div class="ai-note-header">
+                        <span class="article-tag">活動策劃</span>
+                        <button class="btn-copy-modern" onclick="copyAIPrompt(this, 'prompt-text-2')">📋 一鍵複製</button>
                     </div>
+                    <h3 class="ai-note-title">長者小組活動流程草稿</h3>
+                    <p class="ai-prompt-text" id="prompt-text-2"><strong>[角色]</strong> 你是協助整理活動構思的文字助手。 <strong>[對象與情境]</strong> 為 20 位長者設計一節 60 分鐘的小組活動，預算有限，參加者能力和興趣各有不同。 <strong>[任務]</strong> 提供流程草稿，包含簡單的手眼協調和懷舊元素，並為每個環節列出所需物資及可選的坐姿參與方式。 <strong>[限制與注意事項]</strong> 不要假設所有參加者有相同能力；列出需要由帶領者按實際情況調整的地方，不要承諾活動成效。</p>
+                </article>
 
-                    <div id="manual-view" class="hidden">
-                        <input type="text" id="auth-code" placeholder="請輸入會員代碼" class="w-full p-3 sm:p-4 border border-gray-300 rounded-xl text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all tracking-wider">
-                        <p id="staff-mode-hint" class="text-emerald-600 text-xs sm:text-sm mt-2 hidden font-bold"><i class="fas fa-user-shield"></i> 職員模式已啟動，請確保已填借用人。</p>
+                <article class="article-card ai-note-card">
+                    <div class="ai-note-header">
+                        <span class="article-tag tag-blue">個案記錄</span>
+                        <button class="btn-copy-modern" onclick="copyAIPrompt(this, 'prompt-text-3')">📋 一鍵複製</button>
                     </div>
+                    <h3 class="ai-note-title">個案訪談摘要整理 (SOAP 格式)</h3>
+                    <p class="ai-prompt-text" id="prompt-text-3"><strong>[角色]</strong> 你現在是一位專業的「個案經理」。 <strong>[背景]</strong> 我剛完成一次長達 40 分鐘的家訪，記錄內容非常零散且口語化。 <strong>[任務]</strong> 請將訪談記錄整理成專業的 SOAP 格式，並標註出潛在的風險點與後續跟進建議。 <strong>[限制與注意事項]</strong> 這份報告將作為資源申請的依據，準確性與專業性至關重要。</p>
+                </article>
 
-                    <div id="scan-success-view" class="hidden w-full p-3 sm:p-4 bg-emerald-50 border-2 border-emerald-400 rounded-xl flex items-center justify-between shadow-sm">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 sm:w-10 sm:h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white shadow-md shrink-0">
-                                <i class="fas fa-check"></i>
-                            </div>
-                            <div>
-                                <p class="text-[10px] sm:text-xs text-emerald-600 font-bold uppercase tracking-wider">Access Granted</p>
-                                <p class="text-base sm:text-lg font-mono font-bold text-emerald-800" id="authorized-id-display">YOUTH-****</p>
-                            </div>
-                        </div>
-                        <button type="button" id="reset-auth-btn" class="text-red-400 hover:text-red-600 p-2 transition-colors">
-                            <i class="fas fa-times-circle text-lg sm:text-xl"></i>
-                        </button>
+                <article class="article-card ai-note-card">
+                    <div class="ai-note-header">
+                        <span class="article-tag" style="background:#F3E8FF; color:#6B21A8;">溝通模擬</span>
+                        <button class="btn-copy-modern" onclick="copyAIPrompt(this, 'prompt-text-4')">📋 一鍵複製</button>
                     </div>
+                    <h3 class="ai-note-title">困難家屬溝通模擬 (情商引導)</h3>
+                    <p class="ai-prompt-text" id="prompt-text-4"><strong>[角色]</strong> 你現在是一位具備「非暴力溝通」技巧的諮商專家。 <strong>[背景]</strong> 一位家屬對中心的服務安排表示強烈不滿，語氣激動且不願聽取解釋。 <strong>[任務]</strong> 請模擬這段對話，並提供 3 個既能安撫情緒又能堅持專業原則的應對金句。 <strong>[限制與注意事項]</strong> 處理不當可能會演變成正式投訴，請提供最高情商的溝通策略。</p>
+                </article>
 
-                    <p id="auth-error" class="text-red-500 text-xs sm:text-sm mt-2 hidden"><i class="fas fa-exclamation-circle"></i> 授權失敗：代碼無效，請重試。</p>
-                    <input type="hidden" id="final-auth-value" required>
-                </div>
+                <article class="article-card ai-note-card">
+                    <div class="ai-note-header">
+                        <span class="article-tag" style="background:#DCFCE7; color:#166534;">計劃書撰寫</span>
+                        <button class="btn-copy-modern" onclick="copyAIPrompt(this, 'prompt-text-5')">📋 一鍵複製</button>
+                    </div>
+                    <h3 class="ai-note-title">申請基金計劃書框架生成</h3>
+                    <p class="ai-prompt-text" id="prompt-text-5"><strong>[角色]</strong> 你現在是一位資深的「NGO 項目發展主任」。 <strong>[背景]</strong> 我們打算向社創基金申請撥款，對象是獨居長者。 <strong>[任務]</strong> 請幫我生成一份計劃書的大綱框架，包含需求分析、預期成效及創新點。 <strong>[限制與注意事項]</strong> 審批委員會非常看重數據支持與可持續性，請確保框架具備說服力。</p>
+                </article>
+                
+                <article class="article-card ai-note-card">
+                    <div class="ai-note-header">
+                        <span class="article-tag" style="background:#FEF08A; color:#854D0E;">活動宣傳</span>
+                        <button class="btn-copy-modern" onclick="copyAIPrompt(this, 'prompt-text-6')">📋 一鍵複製</button>
+                    </div>
+                    <h3 class="ai-note-title">Facebook 防騙工作坊貼文</h3>
+                    <p class="ai-prompt-text" id="prompt-text-6"><strong>[角色]</strong> 你現在是一位社福機構的「社交媒體小編」。 <strong>[背景]</strong> 中心即將舉辦一個「手機防騙工作坊」，對象是長者及其護老者。 <strong>[任務]</strong> 請幫我寫一篇 Facebook 宣傳貼文，包含引人注目的標題、活動詳情及報名連結，並加上適當的 Emoji。 <strong>[限制與注意事項]</strong> 最近區內發生多宗長者被騙案件，貼文必須強調急切性，吸引家屬盡快幫長者報名。</p>
+                </article>
 
-                <div class="mt-auto pt-4 pb-6">
-                    <button type="submit" id="submit-btn" disabled class="w-full bg-gray-300 text-gray-500 font-bold py-3 sm:py-4 rounded-xl text-lg sm:text-xl transition-all duration-300 cursor-not-allowed uppercase tracking-widest shadow-sm">
-                        進入預約確認
+                <article class="article-card ai-note-card hidden">
+                    <div class="ai-note-header">
+                        <span class="article-tag" style="background:#E0E7FF; color:#3730A3;">義工培訓</span>
+                        <button class="btn-copy-modern" onclick="copyAIPrompt(this, 'prompt-text-7')">📋 一鍵複製</button>
+                    </div>
+                    <h3 class="ai-note-title">青年教長者手機教學指南</h3>
+                    <p class="ai-prompt-text" id="prompt-text-7"><strong>[角色]</strong> 你現在是一位資深的「義工發展主任」。 <strong>[背景]</strong> 下星期有一批中學生來中心做義工，負責一對一教長者用智能手機。 <strong>[任務]</strong> 請設計一個 15 分鐘的「義工培訓簡報大綱」，列出教長者用手機時的 3 大大忌與 3 大溝通秘訣。 <strong>[限制與注意事項]</strong> 青年人可能缺乏耐性，如果沒有事先培訓，很容易引起長者挫敗感甚至引發衝突。</p>
+                </article>
+
+                <article class="article-card ai-note-card hidden">
+                    <div class="ai-note-header">
+                        <span class="article-tag" style="background:#FCE7F3; color:#9D174D;">報告撰寫</span>
+                        <button class="btn-copy-modern" onclick="copyAIPrompt(this, 'prompt-text-8')">📋 一鍵複製</button>
+                    </div>
+                    <h3 class="ai-note-title">計劃成效與影響力故事轉化</h3>
+                    <p class="ai-prompt-text" id="prompt-text-8"><strong>[角色]</strong> 你現在是一位精通數據分析的「項目發展主任」。 <strong>[背景]</strong> 我們的「長者數碼共融計劃」剛完結，需要向贊助商提交成效報告，目前只有一堆滿意度問卷數據。 <strong>[任務]</strong> 請提供一個報告結構，並示範如何將「85%長者學會用WhatsApp」這種冷冰冰的數據，轉化為有溫度的影響力故事。 <strong>[限制與注意事項]</strong> 報告質素直接影響明年的撥款審批，必須展現出數據背後的人情味與實際改變。</p>
+                </article>
+
+                <article class="article-card ai-note-card hidden">
+                    <div class="ai-note-header">
+                        <span class="article-tag" style="background:#F3E8FF; color:#6B21A8;">青年輔導</span>
+                        <button class="btn-copy-modern" onclick="copyAIPrompt(this, 'prompt-text-9')">📋 一鍵複製</button>
+                    </div>
+                    <h3 class="ai-note-title">AI 繪圖提示詞 (Prompt) 引導轉化器</h3>
+                    <p class="ai-prompt-text" id="prompt-text-9">
+                        <strong>[角色]</strong> 你現在是一位熟悉表達藝術治療概念的「青年社工助理」。 
+                        <strong>[背景]</strong> 我正在輔導一位中學生，他感到極度焦慮和迷茫，但只能說出「好煩」、「好有壓迫感」等零碎字眼，無法具體描述感受。我們打算用 AI 繪圖工具（如 Midjourney / Bing Image Creator）來呈現他的內心世界。 
+                        <strong>[任務]</strong> 請將他這些零碎的情緒字眼，轉化為 3 個不同風格（如超現實主義、溫暖繪本風、像素風）的英文 AI 繪圖 Prompt，並附上簡單的中文解釋，說明這幅圖如何反映他的情緒。 
+                        <strong>[限制與注意事項]</strong> 青少年很容易對沉悶的輔導失去耐性，請確保 Prompt 產生的畫面具有視覺衝擊力，能瞬間吸引他的注意力並打開話匣子。
+                    </p>
+                </article>
+
+                <article class="article-card ai-note-card hidden">
+                    <div class="ai-note-header">
+                        <span class="article-tag" style="background:#DCFCE7; color:#166534;">兒童成長</span>
+                        <button class="btn-copy-modern" onclick="copyAIPrompt(this, 'prompt-text-kids-coding')">📋 一鍵複製</button>
+                    </div>
+                    <h3 class="ai-note-title">AI 故事指令：不插電編程劇本產生器</h3>
+                    <p class="ai-prompt-text" id="prompt-text-kids-coding">
+                        <strong>[角色]</strong> 你是一位專門設計兒童 STEM 活動的「創意教育官」。 
+                        <strong>[背景]</strong> 我正在帶領一班 6-9 歲的小朋友進行編程邏輯訓練，我們不使用電腦，而是用實體的「箭頭卡片」來指令角色移動。 
+                        <strong>[任務]</strong> 請編寫一個趣味故事劇本（主題：森林大冒險），劇本中需要包含 3 個關卡。每個關卡都要小朋友用「起點、前進、左轉/右轉、終點」的邏輯來解決問題，並請為每個關卡設定一個「邏輯障礙」（例如：前方有大石不能直行）。 
+                        <strong>[限制與注意事項]</strong> 小朋友的注意力只有 15 分鐘，請確保故事節奏明快，且指令邏輯清晰，避免過於複雜。
+                    </p>
+                </article>       
+            </div>
+
+            <article class="article-card ai-note-card hidden">
+                <div class="ai-note-header">
+                    <span class="article-tag" style="background:#FEE2E2; color:#991B1B;">易讀易用</span>
+                    <button class="btn-copy-modern" onclick="copyAIPrompt(this, 'prompt-text-20260524')">
+                        📋 一鍵複製
                     </button>
                 </div>
-            </form>
-            
-            <!-- 職員管理通道按鈕 -->
-            <div class="absolute bottom-2 right-4 text-right bg-white w-full">
-                <button onclick="openStaffChannel()" class="text-[11px] text-gray-300 hover:text-cyan-600 transition-colors font-bold tracking-widest"><i class="fas fa-lock mr-1"></i> 職員管理通道</button>
+                <h3 class="ai-note-title">活動宣傳文字易讀檢查</h3>
+                <p class="ai-prompt-text" id="prompt-text-20260524">
+                    <strong>[角色]</strong> 你是文字校對助手，不是無障礙合規審查員。<br><br>
+                    <strong>[任務]</strong> 請檢查以下活動宣傳文字是否清楚易讀：指出過長句子、未解釋的術語，以及可能缺少的日期、時間、地點、對象或報名方法。提供一版簡潔的修訂稿，並把你無法確定的資料列出來，不要自行補寫。<br><br>
+                    <strong>[限制]</strong> 只根據提供的文字修改，不要聲稱符合任何標準；若內容涉及圖片，提醒我另行提供合適的替代文字。請勿貼上參加者個人資料。
+                </p>
+            </article>
+
+            <article class="article-card ai-note-card">
+                <div class="ai-note-header">
+                    <span class="article-tag" style="background:#FEF3C7; color:#92400E;">活動帶領</span>
+                    <button class="btn-copy-modern" onclick="copyAIPrompt(this, 'prompt-text-20260530')">
+                        📋 一鍵複製
+                    </button>
+                </div>
+                <h3 class="ai-note-title">把長者活動說明改寫得簡單清楚</h3>
+                <p class="ai-prompt-text" id="prompt-text-20260530">
+                    <strong>[角色]</strong> 你是協助整理活動指示的文字助手。<br><br>
+                    <strong>[任務]</strong> 把以下活動步驟改寫成簡短、口語、一次只講一個動作的繁體中文。保留原有意思，並列出帶領者需要事先準備的物資。<br><br>
+                    <strong>[限制]</strong> 不要假設參加者的健康狀況、理解能力或個人需要；不要加入醫療建議。資料不清楚時，先列出問題讓帶領者確認。請勿輸入真實參加者資料。
+                </p>
+            </article>
+
+            <div class="load-more-container">
+                <button id="loadMoreAIBtn" class="btn-load-more">查看更多指令 ↓</button>
             </div>
         </section>
+
+        <section class="wish-box" id="wishlist" style="margin-top: 60px;">
+            <h2>💡 想要甚麼新工具？</h2>
+            <p>歡迎留言告訴我們你的想法！</p>
+            <a href="https://forms.gle/JYqK8oKGhbNr4m3x5" target="_blank" rel="noopener noreferrer" class="btn btn-outline">📝 進入許願池</a>
+        </section>
+
+        <section class="coffee-section">
+            <h2>💛 支持我們持續開發</h2>
+            <p>「配記」由熱心社福同工利用工餘時間開發及維護。<br>如果這些工具減輕了你的工作負擔，或者為其他人帶來了歡樂，<br>歡迎請我們飲杯咖啡，支持伺服器運作！</p>
+            <a href="https://buymeacoffee.com/ypkd" target="_blank" rel="noopener noreferrer" class="btn-coffee-large">
+                ☕ Buy me a coffee
+            </a>
+        </section>
+
     </main>
 
-    <!-- 條款細則 (T&C) Modal -->
-    <div id="tnc-modal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 backdrop-blur-sm px-4">
-        <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl border-t-8 border-emerald-500 animate-pop overflow-hidden">
-            <div class="p-4 sm:p-6 border-b border-gray-100 flex justify-between items-center shrink-0 bg-white">
-                <h3 class="text-xl sm:text-2xl font-bold text-gray-800 flex items-center"><i class="fas fa-file-contract mr-3 text-emerald-500"></i>確認前須知</h3>
-                <button onclick="closeTncModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
-                    <i class="fas fa-times text-2xl"></i>
-                </button>
-            </div>
-            
-            <div id="tnc-content" class="p-5 sm:p-8 overflow-y-auto flex-1 text-sm sm:text-base text-gray-700 space-y-6 leading-relaxed custom-scrollbar bg-white">
-                <!-- 中文版 -->
-                <div>
-                    <h4 class="font-bold text-gray-900 text-lg sm:text-xl mb-4">🎮 青年閣使用守則</h4>
-                    <p class="mb-4">歡迎預約青年閣！這裡是屬於大家的放鬆空間（Chill Zone）。為了讓每位 12-24 歲的朋友都能玩得開心，預約前請先閱讀並同意以下「四大守則」：</p>
-                    <ol class="list-decimal pl-5 space-y-4 font-semibold text-gray-800">
-                        <li>準時出席，請勿無故缺席 ✈️
-                            <ul class="list-disc pl-5 mt-1.5 font-normal text-gray-600 text-sm space-y-1">
-                                <li><span class="font-bold">時段保留：</span>預約成功後請準時到達。如果遲到超過 15 分鐘且沒有提前通知，該時段將會開放給現場其他朋友。</li>
-                                <li><span class="font-bold">提前取消：</span>如需取消預約，請至少在 2 小時前於系統取消，切勿浪費名額。</li>
-                            </ul>
-                        </li>
-                        <li>愛護物資，共享快樂 🎱
-                            <ul class="list-disc pl-5 mt-1.5 font-normal text-gray-600 text-sm space-y-1">
-                                <li><span class="font-bold">愛惜裝備：</span>請勿過度用力按壓 PS5 手掣，桌球桿與康樂棋請勿用作嬉戲碰撞。桌遊玩完後請清點好組件並放回原位。</li>
-                                <li><span class="font-bold">主動申報：</span>若發現物資損壞，請立即通知社工，切勿隱瞞，以免影響下一位使用者。</li>
-                            </ul>
-                        </li>
-                        <li>保持整潔，共同維護 🥤
-                            <ul class="list-disc pl-5 mt-1.5 font-normal text-gray-600 text-sm space-y-1">
-                                <li><span class="font-bold">垃圾清理：</span>青年閣歡迎大家帶飲品和小食，但享用後請自覺將垃圾丟進垃圾桶，保持環境乾淨。</li>
-                                <li><span class="font-bold">一起收拾：</span>每節結束前 5 分鐘，請大家一起動手收拾好物資，方便下一節的朋友入座。</li>
-                            </ul>
-                        </li>
-                        <li>互相尊重，和諧相處 🤝
-                            <ul class="list-disc pl-5 mt-1.5 font-normal text-gray-600 text-sm space-y-1">
-                                <li><span class="font-bold">禮貌互動：</span>請保持禮貌，請勿大聲喧嘩、說粗言穢語、打架或欺凌。打機勝負是平常事，最重要是玩得開心！</li>
-                                <li><span class="font-bold">聽從指示：</span>請配合現場社工或職員的指示與安排。</li>
-                            </ul>
-                        </li>
-                    </ol>
-                    <div class="mt-6 p-4 sm:p-5 bg-red-50 border border-red-200 rounded-xl text-red-700 shadow-sm">
-                        <p class="font-bold text-red-800 mb-2"><i class="fas fa-exclamation-triangle mr-2"></i>重要提示：公物價值參考（請愛惜公物 💸）</p>
-                        <p class="text-sm mb-3">若因不當使用而導致故意破壞或遺失公物，必須照價賠償。價值參考如下：</p>
-                        <ul class="list-disc pl-5 text-sm space-y-2">
-                            <li>🎱 <span class="font-bold">桌球（整副）：$12,000</span> （特別注意：桌球若遺失任何一粒，均需整副賠償！）</li>
-                            <li>🎮 <span class="font-bold">PS5 主機及配件：$5,000</span></li>
-                            <li>🪵 <span class="font-bold">康樂棋：$4,000</span></li>
-                            <li>🃏 <span class="font-bold">桌遊（Boardgames）：</span>每副約 $300 - $500 （視乎款式）</li>
-                        </ul>
-                        <p class="mt-4 text-sm font-bold bg-red-100 p-2 rounded-lg inline-block text-red-800">違反以上守則者，中心職員有權即時終止你當次的使用權，甚至暫停你未來的預約資格。謝謝合作！</p>
-                    </div>
-                </div>
-
-                <hr class="border-gray-200 my-8">
-
-                <!-- English -->
-                <div>
-                    <h4 class="font-bold text-gray-900 text-lg sm:text-xl mb-4">🎮 Youth Corner Rules</h4>
-                    <p class="mb-4">Welcome to the Youth Corner! This is a Chill Zone for everyone. To ensure all friends aged 12-24 have a great time, please read and agree to the following 4 Simple Rules before confirming your booking:</p>
-                    <ol class="list-decimal pl-5 space-y-4 font-semibold text-gray-800">
-                        <li>Be Punctual, Don't Be a Ghost ✈️
-                            <ul class="list-disc pl-5 mt-1.5 font-normal text-gray-600 text-sm space-y-1">
-                                <li><span class="font-bold">Booking Retention:</span> Please arrive on time. If you are late for more than 15 minutes without notice, your slot will be released to other users.</li>
-                                <li><span class="font-bold">Cancellation:</span> If you need to cancel, please do so via the system at least 2 hours in advance. Don't waste the slot!</li>
-                            </ul>
-                        </li>
-                        <li>Care for Our Equipment 🎱
-                            <ul class="list-disc pl-5 mt-1.5 font-normal text-gray-600 text-sm space-y-1">
-                                <li><span class="font-bold">Gentle Use:</span> Please handle PS5 controllers with care (don't smash the buttons!). Do not play roughly with pool cues or carrom sticks. Please count all pieces and put boardgames back in place after playing.</li>
-                                <li><span class="font-bold">Report Damage:</span> If you find anything broken, please tell our social workers immediately. Do not hide it!</li>
-                            </ul>
-                        </li>
-                        <li>Keep It Clean and Tidy 🥤
-                            <ul class="list-disc pl-5 mt-1.5 font-normal text-gray-600 text-sm space-y-1">
-                                <li><span class="font-bold">Clean Up:</span> Food and drinks are welcome, but please throw away your trash in the bin to keep the area clean.</li>
-                                <li><span class="font-bold">Pack Up Together:</span> Please spend the last 5 minutes of your session packing up, so the next group can enjoy it.</li>
-                            </ul>
-                        </li>
-                        <li>Respect Each Other (Good Vibes Only) 🤝
-                            <ul class="list-disc pl-5 mt-1.5 font-normal text-gray-600 text-sm space-y-1">
-                                <li><span class="font-bold">Be Polite:</span> No shouting, swearing, fighting, or bullying. Winning or losing a game is secondary—having fun is what matters!</li>
-                                <li><span class="font-bold">Follow Staff Guidance:</span> Please cooperate with our social workers and staff on-site.</li>
-                            </ul>
-                        </li>
-                    </ol>
-                    <div class="mt-6 p-4 sm:p-5 bg-red-50 border border-red-200 rounded-xl text-red-700 shadow-sm">
-                        <p class="font-bold text-red-800 mb-2"><i class="fas fa-exclamation-triangle mr-2"></i>Notice: Equipment Compensation List 💸</p>
-                        <p class="text-sm mb-3">If any property is damaged or lost due to improper use, full compensation is required. Reference prices:</p>
-                        <ul class="list-disc pl-5 text-sm space-y-2">
-                            <li>🎱 <span class="font-bold">Billiards (Full Set): $12,000</span> (Important Note: If any single ball is lost, compensation for the entire set is required!)</li>
-                            <li>🎮 <span class="font-bold">PS5 Console & Accessories: $5,000</span></li>
-                            <li>🪵 <span class="font-bold">Carrom Board: $4,000</span></li>
-                            <li>🃏 <span class="font-bold">Boardgames:</span> Around $300 - $500 per set (Depends on the game)</li>
-                        </ul>
-                        <p class="mt-4 text-sm font-bold bg-red-100 p-2 rounded-lg inline-block text-red-800">Failure to follow these rules may result in immediate termination of use and suspension of future bookings. Thank you for your cooperation!</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="p-4 sm:p-6 border-t border-gray-100 bg-gray-50 shrink-0">
-                <button id="tnc-agree-btn" disabled onclick="submitBookingToApi()" class="w-full bg-gray-300 text-gray-500 font-bold py-3 sm:py-4 rounded-xl text-sm sm:text-lg transition-all duration-300 cursor-not-allowed tracking-widest shadow-sm flex items-center justify-center gap-2">
-                    <i class="fas fa-arrow-down animate-bounce" id="tnc-btn-icon"></i>
-                    <span id="tnc-btn-text">請向下閱讀到底部 (Scroll to bottom)</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 成功預約 Modal -->
-    <div id="success-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full mx-4 text-center shadow-2xl border-t-8 border-emerald-500 animate-pop">
-            <div class="w-16 h-16 sm:w-20 sm:h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
-                <i class="fas fa-check text-3xl sm:text-4xl text-emerald-500"></i>
-            </div>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-800 mb-2 tracking-wider">預約成功</h3>
-            <p class="text-sm sm:text-base text-gray-500 mb-6" id="success-message">空間已為您預留。</p>
-            <button onclick="closeModal()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-lg transition-all shadow-md">
-                完成並返回
-            </button>
-        </div>
-    </div>
-
-    <!-- 註冊 QR Code Modal -->
-    <div id="reg-modal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 backdrop-blur-sm overflow-y-auto">
-        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full mx-4 my-8 text-center shadow-2xl animate-pop relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-3 bg-gradient-to-r from-cyan-400 to-blue-500"></div>
-            <button onclick="closeRegModal()" class="absolute top-4 right-4 sm:top-5 sm:right-5 text-gray-400 hover:text-gray-600 transition-colors">
-                <i class="fas fa-times text-xl sm:text-2xl"></i>
-            </button>
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-800 mt-2 mb-2 tracking-wider">成為註冊會員</h3>
-            <p class="text-gray-500 mb-4 sm:mb-6 text-xs sm:text-sm">請使用手機掃描下方 QR Code，完成登記後，系統將發送代碼給您。</p>
-            <div class="bg-white p-2 sm:p-3 rounded-2xl inline-block mb-4 sm:mb-6 border-2 border-gray-100 shadow-sm">
-                <img src="https://quickchart.io/qr?text=https://forms.gle/YXhJkQHWT6C91esa9&size=200" alt="Registration QR" class="w-40 h-40 sm:w-48 sm:h-48 mx-auto rounded-lg">
-            </div>
-            <div class="bg-cyan-50 p-3 sm:p-4 rounded-xl text-left border border-cyan-100">
-                <p class="font-bold text-cyan-700 mb-1 sm:mb-2 text-xs sm:text-sm"><i class="fas fa-bolt mr-2"></i>智能通行提示：</p>
-                <ul class="text-[10px] sm:text-xs text-cyan-600 list-disc pl-4 sm:pl-5 space-y-1 sm:space-y-2">
-                    <li>只需登記一次，永久通行。</li>
-                    <li>每次借房掃描代碼即可解鎖，免除手動輸入。</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    <!-- Loading 遮罩 -->
-    <div id="loading-overlay" class="fixed inset-0 bg-white/80 hidden items-center justify-center z-[100] backdrop-blur-sm transition-opacity">
-        <div class="flex flex-col items-center">
-            <i class="fas fa-circle-notch fa-spin text-5xl sm:text-6xl text-emerald-500 mb-4"></i>
-            <p class="text-lg sm:text-xl font-bold text-slate-700 tracking-wider">系統處理中...</p>
-        </div>
-    </div>
+    <pui-kei-footer></pui-kei-footer>
 
     <script>
-        // ==========================================
-        // 🚨 系統核心設定 🚨
-        // ==========================================
-        
-        // 1. Apps Script API 網址
-        const API_URL = "https://script.google.com/macros/s/AKfycbyKESIOoidbS4u4kUtduPj9QCieYOZmoCIYQTvkP2smbFvzP4_sdF9sribDmBzV5qeN/exec"; 
-        
-        // 2. Google Sheet 真實網址 (供職員直飛後台用)
-        const SHEET_URL = "https://docs.google.com/spreadsheets/d/1FRx6ZPXYzy5KZ4fvLL62xyCe7mjSsnqwaGkGAEuiLRM/edit?usp=sharing"; 
-        
-        // ==========================================
-
-        let scheduleData = [];
-        let selectedSlotId = null;
-        let selectedZones = []; 
-        let availableDates = [];
-        let selectedDate = new Date(); // 當前選擇的預約日期
-        const loadingOverlay = document.getElementById('loading-overlay');
-
-        function showLoading() { loadingOverlay.classList.remove('hidden'); loadingOverlay.classList.add('flex'); }
-        function hideLoading() { loadingOverlay.classList.add('hidden'); loadingOverlay.classList.remove('flex'); }
-
-        // 格式化日期為 YYYY-MM-DD
-        function formatDate(dateObj) {
-            return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
-        }
-
-        function getDayName(dayIndex) {
-            return ['日', '一', '二', '三', '四', '五', '六'][dayIndex];
-        }
-
-        // 初始化未來 14 天的可用日期 (跳過星期日)
-        function initDates() {
-            availableDates = [];
-            let currDate = new Date();
-            let added = 0;
-            
-            while(added < 14) {
-                if (currDate.getDay() !== 0) { // 0 代表星期日，自動飛走
-                    availableDates.push(new Date(currDate));
-                    added++;
-                }
-                currDate.setDate(currDate.getDate() + 1);
-            }
-            
-            selectedDate = availableDates[0]; // 預設選中第一天可用日子
-            renderDateSelector();
-        }
-
-        // 渲染頂部的日期選擇按鈕
-        function renderDateSelector() {
-            const container = document.getElementById('date-selector-container');
-            container.innerHTML = '';
-            
-            availableDates.forEach((dateObj, index) => {
-                const isSelected = formatDate(dateObj) === formatDate(selectedDate);
-                const dateStr = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
-                const dayStr = `星期${getDayName(dateObj.getDay())}`;
-                const isToday = formatDate(dateObj) === formatDate(new Date());
-                let displayDay = isToday ? '今日' : dayStr;
-
-                const btn = document.createElement('button');
-                btn.className = `flex flex-col items-center justify-center min-w-[70px] sm:min-w-[80px] py-2 px-1 rounded-xl border-2 transition-all duration-300 font-bold ${
-                    isSelected 
-                    ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm transform scale-105' 
-                    : 'bg-white border-gray-200 text-gray-400 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-500'
-                }`;
-                btn.onclick = () => onDateSelect(index);
-                
-                btn.innerHTML = `
-                    <span class="text-xs sm:text-sm mb-0.5">${displayDay}</span>
-                    <span class="text-sm sm:text-base font-mono">${dateStr}</span>
-                `;
-                container.appendChild(btn);
-            });
-        }
-
-        // 點擊切換日期
-        function onDateSelect(index) {
-            selectedDate = availableDates[index];
-            renderDateSelector();
-            resetForm();
-            syncSchedule();
-        }
-
-        // 職員直飛後台通道
-        function openStaffChannel() {
-            const pwd = prompt("🔐 職員管理通道\n請輸入 4 位數字管理員密碼：");
-            if (pwd === "0334") {
-                window.open(SHEET_URL, "_blank");
-            } else if (pwd !== null) {
-                alert("密碼錯誤，拒絕存取。");
-            }
-        }
-
-        async function syncSchedule() {
-            if (!API_URL.startsWith("https://script.google.com")) {
-                scheduleData = generateDailySchedule(selectedDate); renderSchedule(); return;
-            }
-            showLoading();
-            try {
-                let baseSchedule = generateDailySchedule(selectedDate);
-                if (baseSchedule.length > 0) {
-                    const targetDateStr = formatDate(selectedDate);
-                    const response = await fetch(`${API_URL}?date=${targetDateStr}`);
-                    const result = await response.json();
-                    if (result.status === "success" && result.bookings) {
-                        result.bookings.forEach(serverBooking => {
-                            const slotIndex = baseSchedule.findIndex(s => s.id === serverBooking.id);
-                            if (slotIndex > -1) {
-                                let isZone1 = serverBooking.time.includes("[CHILLZONE]");
-                                let isZone2 = serverBooking.time.includes("[桌球/康樂棋]");
-                                
-                                if (isZone1) baseSchedule[slotIndex].zone1Status = "booked";
-                                if (isZone2) baseSchedule[slotIndex].zone2Status = "booked";
-                                
-                                // 兼容舊版資料
-                                if (!isZone1 && !isZone2) {
-                                    baseSchedule[slotIndex].zone1Status = "booked";
-                                    baseSchedule[slotIndex].zone2Status = "booked";
-                                }
-                                
-                                baseSchedule[slotIndex].bookedBy = serverBooking.bookedBy;
-                                baseSchedule[slotIndex].actualId = serverBooking.actualId || "";
-                            }
-                        });
-                    }
-                }
-                scheduleData = baseSchedule;
-                renderSchedule();
-                
-                // 防撞期檢查
-                if (selectedSlotId) {
-                    const currentSlot = scheduleData.find(s => s.id === selectedSlotId);
-                    if (currentSlot) {
-                        let collision = false;
-                        if (selectedZones.length === 0 && currentSlot.zone1Status === 'booked' && currentSlot.zone2Status === 'booked') collision = true;
-                        if (selectedZones.includes('zone1') && currentSlot.zone1Status === 'booked') collision = true;
-                        if (selectedZones.includes('zone2') && currentSlot.zone2Status === 'booked') collision = true;
-
-                        if (collision) {
-                            resetForm(); 
-                            alert("抱歉，您選擇的時段或空間剛剛已被其他人預約。");
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- 文章的載入更多邏輯 ---
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            const itemsPerBatch = 3;
+            if(loadMoreBtn) {
+                loadMoreBtn.addEventListener('click', function() {
+                    const hiddenItems = document.querySelectorAll('.article-card.hidden:not(.ai-note-card)');
+                    if (hiddenItems.length > 0) {
+                        for (let i = 0; i < itemsPerBatch && i < hiddenItems.length; i++) {
+                            hiddenItems[i].classList.remove('hidden');
+                        }
+                        const remainingHidden = document.querySelectorAll('.article-card.hidden:not(.ai-note-card)');
+                        if (remainingHidden.length === 0) {
+                            loadMoreBtn.style.display = 'none';
                         }
                     }
-                }
-            } catch (error) {
-                if(scheduleData.length === 0) scheduleData = generateDailySchedule(selectedDate);
-                renderSchedule();
-            } finally {
-                hideLoading();
-            }
-        }
-
-        function generateDailySchedule(targetDateObj) {
-            const month = targetDateObj.getMonth() + 1; 
-            const day = targetDateObj.getDay(); 
-            const isSummer = (month === 7 || month === 8);
-            let startHour = 0; let endHour = 0;
-
-            if (day === 0) return []; 
-            if (isSummer) {
-                if ([1, 2, 3, 6].includes(day)) { startHour = 10; endHour = 18; }
-                else if ([4, 5].includes(day)) { startHour = 14; endHour = 22; }
-            } else {
-                if (day === 1) { startHour = 14; endHour = 18; }
-                else if (day === 2) { startHour = 10; endHour = 18; }
-                else if ([3, 4, 5].includes(day)) { startHour = 14; endHour = 22; }
-                else if (day === 6) { startHour = 10; endHour = 22; }
-            }
-
-            let newSchedule = []; let slotId = 1;
-            for (let i = startHour; i < endHour; i++) {
-                const startTimeStr = `${i.toString().padStart(2, '0')}:00`;
-                const endTimeStr = `${(i + 1).toString().padStart(2, '0')}:00`;
-                newSchedule.push({ 
-                    id: slotId++, 
-                    time: `${startTimeStr} - ${endTimeStr}`, 
-                    endHour: i + 1, 
-                    zone1Status: "available", 
-                    zone2Status: "available"  
                 });
-            }
-            return newSchedule;
-        }
-
-        const scheduleContainer = document.getElementById('schedule-container');
-        const selectedTimeDisplay = document.getElementById('selected-time-display');
-        const selectedTimeIdInput = document.getElementById('selected-time-id');
-        const submitBtn = document.getElementById('submit-btn');
-        const bookingForm = document.getElementById('booking-form');
-        const successModal = document.getElementById('success-modal');
-        const successMessage = document.getElementById('success-message');
-
-        const regModal = document.getElementById('reg-modal');
-        const tabScan = document.getElementById('tab-scan');
-        const tabManual = document.getElementById('tab-manual');
-        const scannerView = document.getElementById('scanner-view');
-        const manualView = document.getElementById('manual-view');
-        const scanSuccessView = document.getElementById('scan-success-view');
-        const startScanOverlay = document.getElementById('start-scan-overlay');
-        const manualInput = document.getElementById('auth-code');
-        const finalAuthValue = document.getElementById('final-auth-value');
-        const authError = document.getElementById('auth-error');
-        const staffModeHint = document.getElementById('staff-mode-hint');
-        const resetAuthBtn = document.getElementById('reset-auth-btn');
-        const authorizedIdDisplay = document.getElementById('authorized-id-display');
-        let html5QrCode; 
-
-        function openRegModal() { regModal.classList.remove('hidden'); regModal.classList.add('flex'); }
-        function closeRegModal() { regModal.classList.add('hidden'); regModal.classList.remove('flex'); }
-
-        tabScan.addEventListener('click', () => {
-            tabScan.className = 'flex-1 py-1.5 sm:py-2 bg-emerald-500 text-white rounded-lg font-bold shadow-md transition-all text-sm sm:text-base';
-            tabManual.className = 'flex-1 py-1.5 sm:py-2 text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded-lg font-bold transition-all text-sm sm:text-base';
-            scannerView.classList.remove('hidden'); manualView.classList.add('hidden');
-            if (finalAuthValue.value.startsWith('YOUTH-')) { scannerView.classList.add('hidden'); scanSuccessView.classList.remove('hidden'); }
-        });
-
-        tabManual.addEventListener('click', () => {
-            tabManual.className = 'flex-1 py-1.5 sm:py-2 bg-emerald-500 text-white rounded-lg font-bold shadow-md transition-all text-sm sm:text-base';
-            tabScan.className = 'flex-1 py-1.5 sm:py-2 text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded-lg font-bold transition-all text-sm sm:text-base';
-            scannerView.classList.add('hidden'); manualView.classList.remove('hidden'); scanSuccessView.classList.add('hidden');
-            if (html5QrCode && html5QrCode.isScanning) { html5QrCode.stop(); startScanOverlay.classList.remove('hidden'); }
-        });
-
-        startScanOverlay.addEventListener('click', () => {
-            authError.classList.add('hidden'); startScanOverlay.classList.add('hidden');
-            if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start({ facingMode: "user" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess).catch(err => {
-                startScanOverlay.classList.remove('hidden');
-                startScanOverlay.innerHTML = '<i class="fas fa-exclamation-triangle text-2xl sm:text-3xl mb-2 text-red-500"></i><span class="font-bold text-sm sm:text-base">無法啟動相機</span>';
-            });
-        });
-
-        function onScanSuccess(decodedText) {
-            if (html5QrCode && html5QrCode.isScanning) html5QrCode.stop();
-            handleAuthSuccess(decodedText);
-        }
-
-        function handleAuthSuccess(authId) {
-            finalAuthValue.value = authId; manualInput.value = authId;
-            let maskedId = "代碼無效";
-            if (authId.startsWith('YOUTH-')) {
-                maskedId = 'YOUTH-****'; 
-                const userNameInput = document.getElementById('user-name');
-                userNameInput.value = "已驗證會員 (編號已隱藏)"; userNameInput.readOnly = true; 
-                userNameInput.className = "w-full p-3 sm:p-4 bg-emerald-50 border border-emerald-500 rounded-xl text-base sm:text-lg text-emerald-700 font-bold focus:outline-none";
-            }
-            authorizedIdDisplay.textContent = maskedId;
-            scannerView.classList.add('hidden'); manualView.classList.add('hidden');
-            scanSuccessView.classList.remove('hidden'); startScanOverlay.classList.remove('hidden'); authError.classList.add('hidden');
-            checkFormReady();
-        }
-
-        resetAuthBtn.addEventListener('click', () => {
-            finalAuthValue.value = ''; manualInput.value = ''; scanSuccessView.classList.add('hidden');
-            const userNameInput = document.getElementById('user-name');
-            userNameInput.value = ''; userNameInput.readOnly = false;
-            userNameInput.className = "w-full p-3 sm:p-4 border border-gray-300 rounded-xl text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-shadow";
-            if (tabScan.classList.contains('bg-emerald-500')) { scannerView.classList.remove('hidden'); } else { manualView.classList.remove('hidden'); }
-            checkFormReady();
-        });
-
-        manualInput.addEventListener('input', (e) => {
-            const val = e.target.value.trim(); finalAuthValue.value = val;
-            manualInput.className = "w-full p-3 sm:p-4 border border-gray-300 rounded-xl text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all tracking-wider";
-            staffModeHint.classList.add('hidden');
-            if (val.startsWith('YOUTH-')) { handleAuthSuccess(val); } 
-            else if (val === '0334') {
-                authError.classList.add('hidden');
-                manualInput.className = "w-full p-3 sm:p-4 bg-emerald-50 border border-emerald-500 rounded-xl text-base sm:text-lg text-emerald-700 font-bold focus:outline-none tracking-wider";
-                staffModeHint.classList.remove('hidden'); 
-            }
-            checkFormReady();
-        });
-
-        // 渲染時間表 (支援跨日及三色顯示)
-        function renderSchedule() {
-            scheduleContainer.innerHTML = ''; 
-            if (scheduleData.length === 0) {
-                scheduleContainer.innerHTML = `
-                    <div class="h-full min-h-[200px] sm:min-h-[300px] flex flex-col items-center justify-center text-gray-400">
-                        <i class="fas fa-door-closed text-4xl sm:text-6xl mb-3 sm:mb-4 text-gray-300"></i>
-                        <p class="text-lg sm:text-2xl font-bold text-gray-500 mb-2 tracking-wider">是日中心休息</p>
-                    </div>`; return;
-            }
-
-            const now = new Date();
-            const isToday = formatDate(selectedDate) === formatDate(now);
-            const currentHour = now.getHours(); 
-
-            scheduleData.forEach(slot => {
-                // 如果是未來的日子，就無「已結束」的概念
-                const isPast = isToday ? (currentHour >= slot.endHour) : false; 
-                const z1Avail = slot.zone1Status === 'available';
-                const z2Avail = slot.zone2Status === 'available';
-                const isSelected = slot.id === selectedSlotId;
-                
-                let bgClass, borderClass, textClass, icon, statusText, cursorClass;
-
-                if (isPast) {
-                    bgClass = 'bg-gray-50 opacity-60'; borderClass = 'border-2 border-gray-200'; textClass = 'text-gray-400';
-                    icon = '<i class="fas fa-history"></i>'; statusText = '已結束'; cursorClass = 'cursor-not-allowed'; 
-                } else if (!z1Avail && !z2Avail) {
-                    bgClass = 'bg-slate-100';
-                    borderClass = isSelected ? 'border-4 border-slate-400 shadow-md transform scale-[1.02]' : 'border-2 border-slate-200';
-                    textClass = 'text-slate-500';
-                    icon = '<i class="fas fa-lock"></i>'; statusText = '已滿 (Fully Booked)'; cursorClass = 'cursor-not-allowed';
-                } else if (z1Avail && z2Avail) {
-                    bgClass = 'bg-emerald-50 hover:bg-emerald-100';
-                    borderClass = isSelected ? 'border-4 border-emerald-500 shadow-md transform scale-[1.02]' : 'border-2 border-emerald-200';
-                    textClass = 'text-emerald-700';
-                    icon = '<i class="far fa-check-circle text-emerald-500"></i>'; statusText = '可預約'; cursorClass = 'cursor-pointer'; 
-                } else {
-                    bgClass = 'bg-amber-50 hover:bg-amber-100';
-                    borderClass = isSelected ? 'border-4 border-amber-500 shadow-md transform scale-[1.02]' : 'border-2 border-amber-300 border-dashed';
-                    textClass = 'text-amber-700';
-                    icon = '<i class="fas fa-adjust text-amber-500"></i>';
-                    const remain = z1Avail ? 'CHILLZONE' : '桌球/康樂棋';
-                    statusText = `尚餘: ${remain}`; cursorClass = 'cursor-pointer';
+                if (document.querySelectorAll('.article-card.hidden:not(.ai-note-card)').length === 0) {
+                    loadMoreBtn.style.display = 'none';
                 }
-
-                const slotEl = document.createElement('div');
-                slotEl.className = `p-3 sm:p-4 rounded-xl flex items-center justify-between transition-all duration-300 ${bgClass} ${borderClass} ${textClass} ${cursorClass}`;
-                slotEl.innerHTML = `<div class="flex items-center gap-3 sm:gap-4"><div class="text-xl sm:text-2xl font-bold font-mono tracking-tighter w-24 sm:w-40 text-sm sm:text-base">${slot.time}</div><div class="text-sm sm:text-lg font-medium flex items-center gap-2">${icon} <span class="truncate max-w-[120px] sm:max-w-[200px]">${statusText}</span></div></div>`;
-
-                if (!isPast && (z1Avail || z2Avail)) {
-                    slotEl.onclick = () => selectSlot(slot.id, slot.time, z1Avail, z2Avail);
-                }
-                scheduleContainer.appendChild(slotEl);
-            });
-        }
-
-        function selectSlot(id, timeString, z1Avail, z2Avail) {
-            selectedSlotId = id; selectedTimeIdInput.value = id;
-            selectedTimeDisplay.innerHTML = `<span class="text-emerald-700 font-bold text-lg sm:text-xl"><i class="far fa-clock mr-2"></i>${timeString}</span>`;
-            selectedTimeDisplay.className = "w-full p-3 sm:p-4 border-2 border-emerald-400 rounded-xl text-center bg-emerald-50 transition-all";
-            
-            // 顯示 1.5 選擇空間
-            const zoneContainer = document.getElementById('zone-selection-container');
-            zoneContainer.classList.remove('hidden');
-            setTimeout(() => zoneContainer.classList.remove('opacity-0'), 10);
-            
-            // 開啟後續表單步驟
-            document.getElementById('form-step-3').classList.remove('opacity-50', 'pointer-events-none');
-            document.getElementById('form-step-4').classList.remove('opacity-50', 'pointer-events-none');
-            document.getElementById('form-step-5').classList.remove('opacity-50', 'pointer-events-none');
-
-            // 每次重新選擇時段，清空已選空間
-            selectedZones = [];
-            
-            const btnZ1 = document.getElementById('btn-zone1');
-            const btnZ2 = document.getElementById('btn-zone2');
-
-            btnZ1.className = "flex-1 py-3 px-2 rounded-xl border-2 font-bold transition-all text-center flex flex-col items-center justify-center gap-1 group " + (z1Avail ? "border-gray-200 text-gray-500 hover:border-emerald-500 hover:text-emerald-600 bg-white" : "border-gray-200 bg-gray-100 text-gray-300 cursor-not-allowed");
-            btnZ2.className = "flex-1 py-3 px-2 rounded-xl border-2 font-bold transition-all text-center flex flex-col items-center justify-center gap-1 group " + (z2Avail ? "border-gray-200 text-gray-500 hover:border-emerald-500 hover:text-emerald-600 bg-white" : "border-gray-200 bg-gray-100 text-gray-300 cursor-not-allowed");
-            
-            btnZ1.disabled = !z1Avail;
-            btnZ2.disabled = !z2Avail;
-
-            checkFormReady();
-            renderSchedule(); 
-            zoneContainer.scrollIntoView({behavior: 'smooth', block: 'center'});
-        }
-
-        // 多選邏輯 (Toggle Logic)
-        function selectZone(zone) {
-            const btn = document.getElementById(zone === 'zone1' ? 'btn-zone1' : 'btn-zone2');
-            if (btn.disabled) return;
-
-            if (selectedZones.includes(zone)) {
-                selectedZones = selectedZones.filter(z => z !== zone);
-                btn.classList.remove('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
-                btn.classList.add('border-gray-200', 'text-gray-500', 'bg-white');
-            } else {
-                selectedZones.push(zone);
-                btn.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
-                btn.classList.remove('border-gray-200', 'text-gray-500', 'bg-white');
             }
-            checkFormReady();
-        }
 
-        function checkFormReady() {
-            if (selectedSlotId && selectedZones.length > 0) {
-                submitBtn.disabled = false;
-                submitBtn.className = "w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 sm:py-4 rounded-xl text-lg sm:text-xl transition-all duration-300 shadow-lg transform active:scale-95 uppercase tracking-widest";
-            } else {
-                submitBtn.disabled = true;
-                submitBtn.className = "w-full bg-gray-300 text-gray-500 font-bold py-3 sm:py-4 rounded-xl text-lg sm:text-xl transition-all duration-300 cursor-not-allowed uppercase tracking-widest shadow-sm";
-            }
-        }
-
-        // ==========================================
-        // 🚨 條款及細則 (T&C) 邏輯 🚨
-        // ==========================================
-        const tncModal = document.getElementById('tnc-modal');
-        const tncContent = document.getElementById('tnc-content');
-        const tncAgreeBtn = document.getElementById('tnc-agree-btn');
-        const tncBtnText = document.getElementById('tnc-btn-text');
-        const tncBtnIcon = document.getElementById('tnc-btn-icon');
-        let hasReadTnc = false;
-
-        function openTncModal() {
-            hasReadTnc = false;
-            tncModal.classList.remove('hidden');
-            tncModal.classList.add('flex');
-            
-            tncContent.scrollTop = 0;
-            tncAgreeBtn.disabled = true;
-            tncAgreeBtn.className = "w-full bg-gray-300 text-gray-500 font-bold py-3 sm:py-4 rounded-xl text-sm sm:text-lg transition-all duration-300 cursor-not-allowed tracking-widest shadow-sm flex items-center justify-center gap-2";
-            tncBtnText.textContent = "請向下閱讀到底部 (Scroll to bottom)";
-            tncBtnIcon.className = "fas fa-arrow-down animate-bounce";
-
-            checkTncScroll(); 
-        }
-
-        function closeTncModal() { tncModal.classList.add('hidden'); tncModal.classList.remove('flex'); }
-
-        function checkTncScroll() {
-            if (hasReadTnc) return;
-            if (tncContent.scrollHeight - tncContent.scrollTop <= tncContent.clientHeight + 20) {
-                hasReadTnc = true;
-                tncAgreeBtn.disabled = false;
-                tncAgreeBtn.className = "w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 sm:py-4 rounded-xl text-sm sm:text-lg transition-all duration-300 shadow-lg transform active:scale-95 uppercase tracking-widest flex items-center justify-center gap-2";
-                tncBtnText.textContent = "我已閱讀並同意 (I have read and agree)";
-                tncBtnIcon.className = "fas fa-check-circle";
-            }
-        }
-
-        tncContent.addEventListener('scroll', checkTncScroll);
-
-        // 表單提交：先彈出條款視窗
-        bookingForm.addEventListener('submit', (e) => {
-            e.preventDefault(); 
-            const userName = document.getElementById('user-name').value.trim();
-            const slotId = parseInt(selectedTimeIdInput.value);
-            const authValue = finalAuthValue.value.trim();
-
-            if (!slotId || !userName || selectedZones.length === 0) return;
-            if (authValue !== '0334' && !authValue.startsWith('YOUTH-')) {
-                authError.classList.remove('hidden'); if(!manualView.classList.contains('hidden')) manualInput.classList.add('border-red-500');
-                return;
-            } else { authError.classList.add('hidden'); manualInput.classList.remove('border-red-500'); }
-
-            const slotIndex = scheduleData.findIndex(s => s.id === slotId);
-            if (slotIndex > -1) {
-                openTncModal(); // 驗證通過，彈出守則
-            }
-        });
-
-        // 真正發送資料至 Google Sheet API
-        async function submitBookingToApi() {
-            closeTncModal(); 
-
-            const userName = document.getElementById('user-name').value.trim();
-            const slotId = parseInt(selectedTimeIdInput.value);
-            const authValue = finalAuthValue.value.trim();
-            const slotIndex = scheduleData.findIndex(s => s.id === slotId);
-            
-            if (slotIndex === -1) return;
-
-            // 將所有被選空間資料合併加入時間字串中
-            let zoneLabels = [];
-            if (selectedZones.includes('zone1')) zoneLabels.push('[CHILLZONE]');
-            if (selectedZones.includes('zone2')) zoneLabels.push('[桌球/康樂棋]');
-            
-            const bookedTime = scheduleData[slotIndex].time + " " + zoneLabels.join(' ');
-            const actualIdValue = authValue.startsWith('YOUTH-') ? authValue : 'STAFF_OVERRIDE';
-            
-            // 使用選擇的日期
-            const selectedDateStr = formatDate(selectedDate);
-
-            showLoading();
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST', body: JSON.stringify({ action: 'book', date: selectedDateStr, slotId: slotId, time: bookedTime, bookedBy: userName, actualId: actualIdValue })
+            // --- 小工具的載入更多邏輯 ---
+            const loadMoreWidgetsBtn = document.getElementById('loadMoreWidgetsBtn');
+            const widgetsPerBatch = 6;
+            if(loadMoreWidgetsBtn) {
+                loadMoreWidgetsBtn.addEventListener('click', function() {
+                    const hiddenWidgets = document.querySelectorAll('.card.widget-hidden');
+                    if (hiddenWidgets.length > 0) {
+                        for (let i = 0; i < widgetsPerBatch && i < hiddenWidgets.length; i++) {
+                            hiddenWidgets[i].classList.remove('widget-hidden');
+                        }
+                        const remainingHidden = document.querySelectorAll('.card.widget-hidden');
+                        if (remainingHidden.length === 0) {
+                            loadMoreWidgetsBtn.style.display = 'none';
+                        }
+                    }
                 });
-                const result = await response.json();
-                if(result.status === "success") {
-                    resetForm(); await syncSchedule(); 
-                    successMessage.innerHTML = `已為您鎖定：<br><span class="text-emerald-600 font-bold text-lg inline-block mt-2">${bookedTime}</span>`;
-                    successModal.classList.remove('hidden'); successModal.classList.add('flex');
-                } else { alert("預約失敗：" + result.message); }
-            } catch(err) { alert("網路錯誤，無法送出預約。"); } finally { hideLoading(); }
-        }
-
-        function resetForm() {
-            bookingForm.reset(); selectedSlotId = null; selectedTimeIdInput.value = ''; finalAuthValue.value = ''; 
-            
-            selectedZones = []; // 清空已選空間
-            document.getElementById('zone-selection-container').classList.add('hidden', 'opacity-0');
-            
-            // 隱藏後續表單
-            document.getElementById('form-step-3').classList.add('opacity-50', 'pointer-events-none');
-            document.getElementById('form-step-4').classList.add('opacity-50', 'pointer-events-none');
-            document.getElementById('form-step-5').classList.add('opacity-50', 'pointer-events-none');
-
-            const userNameInput = document.getElementById('user-name');
-            userNameInput.readOnly = false; userNameInput.className = "w-full p-3 sm:p-4 border border-gray-300 rounded-xl text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-shadow";
-            authError.classList.add('hidden'); staffModeHint.classList.add('hidden');
-            manualInput.className = "w-full p-3 sm:p-4 border border-gray-300 rounded-xl text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all tracking-wider";
-            scanSuccessView.classList.add('hidden');
-            if (tabScan.classList.contains('bg-emerald-500')) scannerView.classList.remove('hidden'); else manualView.classList.remove('hidden');
-            
-            selectedTimeDisplay.innerHTML = `<i class="fas fa-hand-pointer"></i> 請先點選左側可預約時段`;
-            selectedTimeDisplay.className = "w-full p-3 sm:p-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 text-center bg-gray-50 flex items-center justify-center gap-2 transition-all text-sm sm:text-base";
-            
-            checkFormReady();
-        }
-
-        function closeModal() { successModal.classList.add('hidden'); successModal.classList.remove('flex'); }
-
-        let lastRenderedHour = new Date().getHours();
-        let syncTimer = 0;
-
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('clock').textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-            document.getElementById('date').textContent = now.toLocaleDateString('zh-HK', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
-            
-            // 如果顯示的是今天，檢查是否跨過小時，需更新「已過期」狀態
-            if (now.getHours() !== lastRenderedHour && formatDate(selectedDate) === formatDate(now)) {
-                lastRenderedHour = now.getHours(); renderSchedule();
-                if (selectedSlotId && scheduleData.find(s => s.id === selectedSlotId)?.endHour <= lastRenderedHour) resetForm();
+                if (document.querySelectorAll('.card.widget-hidden').length === 0) {
+                    loadMoreWidgetsBtn.style.display = 'none';
+                }
             }
 
-            syncTimer++;
-            if (syncTimer >= 30) {
-                syncTimer = 0;
-                if (loadingOverlay.classList.contains('hidden') && API_URL.startsWith("https://script.google.com")) {
-                    const targetDateStr = formatDate(selectedDate);
-                    fetch(`${API_URL}?date=${targetDateStr}`).then(res => res.json()).then(result => {
-                            if (result.status === "success") {
-                                let baseSchedule = generateDailySchedule(selectedDate);
-                                result.bookings.forEach(sb => {
-                                    const idx = baseSchedule.findIndex(s => s.id === sb.id);
-                                    if (idx > -1) {
-                                        let isZ1 = sb.time.includes("[CHILLZONE]");
-                                        let isZ2 = sb.time.includes("[桌球/康樂棋]");
-                                        if (isZ1) baseSchedule[idx].zone1Status = "booked";
-                                        if (isZ2) baseSchedule[idx].zone2Status = "booked";
-                                        // 兼容舊資料
-                                        if (!isZ1 && !isZ2) {
-                                            baseSchedule[idx].zone1Status = "booked";
-                                            baseSchedule[idx].zone2Status = "booked";
-                                        }
-                                        baseSchedule[idx].bookedBy = sb.bookedBy; 
-                                        baseSchedule[idx].actualId = sb.actualId || "";
-                                    }
-                                });
-                                scheduleData = baseSchedule; renderSchedule();
+            // --- AI 筆記載入更多邏輯 ---
+            const loadMoreAIBtn = document.getElementById('loadMoreAIBtn');
+            if(loadMoreAIBtn) {
+                loadMoreAIBtn.addEventListener('click', function() {
+                    const hiddenAIs = document.querySelectorAll('.ai-note-card.hidden');
+                    for (let i = 0; i < 3 && i < hiddenAIs.length; i++) {
+                        hiddenAIs[i].classList.remove('hidden');
+                    }
+                    if (document.querySelectorAll('.ai-note-card.hidden').length === 0) {
+                        loadMoreAIBtn.style.display = 'none';
+                    }
+                });
+                if (document.querySelectorAll('.ai-note-card.hidden').length === 0) {
+                        loadMoreAIBtn.style.display = 'none';
+                }
+            }
+
+            // --- 導航列平滑滾動效果 ---
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    if(targetId === '#') return;
+                    const targetElement = document.querySelector(targetId);
+                    if(targetElement) {
+                        const headerOffset = 80;
+                        const elementPosition = targetElement.getBoundingClientRect().top;
+                        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                        window.scrollTo({
+                            top: offsetPosition,
+                            behavior: "smooth"
+                        });
+                    }
+                });
+            });
+
+            // ==========================================
+            // ✨ 全新加入：分類過濾邏輯 (Filter Logic)
+            // ==========================================
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            const toolCards = document.querySelectorAll('#tools .card');
+
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // 1. 切換按鈕的 Active 狀態
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    const filterValue = btn.getAttribute('data-filter');
+
+                    // 2. 篩選卡片
+                    toolCards.forEach(card => {
+                        // 如果點擊「全部顯示」
+                        if (filterValue === 'all') {
+                            card.classList.remove('filter-hide');
+                            if (card.classList.contains('widget-hidden_backup')) {
+                                card.classList.add('widget-hidden');
+                                card.classList.remove('widget-hidden_backup');
                             }
-                        }).catch(e => console.log("Background sync error"));
+                        } else {
+                            // 點擊特定分類
+                            if (card.classList.contains('widget-hidden')) {
+                                card.classList.add('widget-hidden_backup');
+                                card.classList.remove('widget-hidden'); 
+                            }
+                            
+                            if (card.getAttribute('data-category') === filterValue) {
+                                card.classList.remove('filter-hide');
+                            } else {
+                                card.classList.add('filter-hide');
+                            }
+                        }
+                    });
+
+                    // 3. 處理「載入更多」按鈕顯示邏輯
+                    if (filterValue === 'all') {
+                        if (document.querySelectorAll('.card.widget-hidden').length > 0) {
+                            if(loadMoreWidgetsBtn) loadMoreWidgetsBtn.style.display = 'inline-block';
+                        }
+                    } else {
+                        if(loadMoreWidgetsBtn) loadMoreWidgetsBtn.style.display = 'none';
+                    }
+                });
+            });
+        });
+
+        // ==========================================
+        // ✨ 一鍵複製功能 (AI 筆記專用)
+        // ==========================================
+        function copyAIPrompt(btnElement, promptId) {
+            const promptText = document.getElementById(promptId).innerText;
+            
+            const showSuccess = () => {
+                const originalHTML = btnElement.innerHTML;
+                btnElement.classList.add('success');
+                btnElement.innerHTML = "✅ 已複製";
+                
+                setTimeout(() => {
+                    btnElement.classList.remove('success');
+                    btnElement.innerHTML = originalHTML;
+                }, 2000);
+            };
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(promptText)
+                    .then(showSuccess)
+                    .catch(fallbackCopy);
+            } else {
+                fallbackCopy();
+            }
+
+            function fallbackCopy() {
+                let textArea = document.createElement("textarea");
+                textArea.value = promptText;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-999999px";
+                textArea.style.top = "-999999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showSuccess();
+                } catch (err) {
+                    alert('複製失敗，請手動複製！');
                 }
+                textArea.remove();
             }
         }
-        
-        // 系統啟動順序：初始化日期 -> 開始時鐘與同步
-        initDates(); 
-        setInterval(updateClock, 1000); 
-        updateClock(); 
-        syncSchedule();
     </script>
 </body>
 </html>

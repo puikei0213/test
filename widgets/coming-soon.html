@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>即將推出 | 配記</title>
+    
+    <!-- 引用上一層的 style.css -->
+    <link rel="stylesheet" href="../style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- 專屬置中排版樣式 --- */
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: #F8FAFC;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            /* 加上背景網格提升科技感 */
+            background-image: 
+                linear-gradient(rgba(0, 102, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 102, 255, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+        
+        .coming-soon-container {
+            background: white;
+            padding: 60px 40px;
+            border-radius: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid #E2E8F0;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        /* 簡單的進場動畫 */
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .icon-huge {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            display: inline-block;
+            background: #F1F5F9;
+            width: 120px;
+            height: 120px;
+            line-height: 120px;
+            border-radius: 50%;
+        }
+
+        h1 { color: #1E293B; font-size: 2rem; margin-bottom: 15px; font-weight: 700; }
+        p { color: #64748B; font-size: 1.05rem; margin-bottom: 30px; line-height: 1.6; }
+        
+        .btn-primary {
+            display: inline-block;
+            background: #0066FF;
+            color: white;
+            padding: 15px 35px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            transition: 0.3s;
+            box-shadow: 0 4px 10px rgba(0, 102, 255, 0.2);
+        }
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 102, 255, 0.3);
+            background: #0052CC;
+        }
+
+        /* 左上角懸浮返回按鈕 (與你的其他工具一致) */
+        .back-nav-container {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+        .btn-back-home {
+            display: flex;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.9);
+            color: #0066FF;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: 700;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        .btn-back-home:hover {
+            background-color: #0066FF;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 102, 255, 0.3);
+        }
+        .btn-back-home span { margin-right: 8px; font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+
+    <!-- 懸浮返回按鈕 -->
+    <div class="back-nav-container">
+        <a href="../index.html" class="btn-back-home">
+            <span>←</span> 配記首頁
+        </a>
+    </div>
+
+    <!-- 主內容區 -->
+    <div class="coming-soon-container">
+        <div class="icon-huge">🚀</div>
+        <h1>即將推出</h1>
+        <p>編輯部正在通宵達旦開發這個新工具！<br>我們很快就會將它帶到你的面前，敬請期待。</p>
+        
+        <a href="../index.html" class="btn-primary">返回首頁</a>
+        
+        <!-- 引導去許願池 -->
+        <div style="margin-top: 40px; border-top: 1px dashed #E2E8F0; padding-top: 25px;">
+            <p style="font-size: 0.95rem; margin-bottom: 10px; color: #94A3B8;">好想快點用到這個功能？或有特別想法？</p>
+            <a href="https://forms.gle/JYqK8oKGhbNr4m3x5" target="_blank" rel="noopener noreferrer" style="color: #0066FF; font-weight: 700; text-decoration: none; font-size: 1.05rem; transition: 0.2s;">📝 進入許願池告訴我們</a>
+        </div>
+    </div>
+
+</body>
+</html>

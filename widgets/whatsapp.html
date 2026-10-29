@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WhatsApp 連結產生器（Mac/Windows 通用版）</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <!-- 引入 SheetJS 用於讀取 Excel -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <style>
+    /* 加入 -apple-system 以優化 Mac 顯示效果 */
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f3f4f6; }
+    .btn-primary { background-color: #25D366; color: white; transition: background-color 0.3s; }
+    .btn-primary:hover { background-color: #128C7E; }
+    .btn-secondary { background-color: #3b82f6; color: white; }
+    .btn-secondary:hover { background-color: #2563eb; }
+    .btn-copy { background-color: #e5e7eb; color: #374151; transition: all 0.2s; }
+    .btn-copy:hover { background-color: #d1d5db; color: #111827; }
+    .btn-copy.copied { background-color: #10b981; color: white; }
+    
+    .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+    
+    /* Loading Spinner */
+    .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 24px; height: 24px; animation: spin 2s linear infinite; display: none; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* Emoji Picker Styles */
+    .emoji-picker-container {
+      display: none;
+      position: absolute;
+      bottom: 100%;
+      left: 0;
+      width: 300px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      z-index: 50;
+      margin-bottom: 8px;
+    }
+    .emoji-picker-container.active { display: block; }
+    .emoji-category-btn { padding: 4px 8px; cursor: pointer; border-bottom: 2px solid transparent; color: #6b7280; }
+    .emoji-category-btn.active { border-bottom-color: #25D366; color: #25D366; }
+    .emoji-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 4px;
+      max-height: 200px;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    .emoji-item {
+      cursor: pointer;
+      font-size: 1.25rem;
+      text-align: center;
+      padding: 4px;
+      border-radius: 4px;
+    }
+    .emoji-item:hover { background-color: #f3f4f6; }
+    .emoji-grid::-webkit-scrollbar { width: 6px; }
+    .emoji-grid::-webkit-scrollbar-track { background: #f1f1f1; }
+    .emoji-grid::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+  </style>
+</head>
+<body class="p-4 md:p-8">
+
+  <div class="max-w-6xl mx-auto space-y-6">
+    
+    <!-- 標題區 -->
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800"><i class="fab fa-whatsapp text-green-500 mr-2"></i>WhatsApp 連結產生器</h1>
+      <p class="text-gray-500 mt-2">只要上載有姓名＆電話號碼的Excel表，便可生成「快速連結」，whatsapp對方，<br>
+      工具只會幫你即時生成連結，唔會有任何留底，放心上載使用！
+      </p>
+    </div>
+
+    <!-- 主要操作區 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- 左側：設定與上載 -->
+      <div class="card p-6 lg:col-span-1 space-y-6 h-fit">
+        <div>
+          <h2 class="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">1. 上載檔案</h2>
+          <div class="flex flex-col space-y-3">
+            <input type="file" id="fileInput" accept=".csv, .xlsx, .xls" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"/>
+            <p class="text-xs text-gray-400">支援 .xlsx, .xls, .csv (無需刪除表頭)</p>
+            <div id="fileInfo" class="text-sm text-blue-600 font-medium"></div>
+          </div>
+        </div>
+
+        <div id="columnSelectors" class="opacity-50 pointer-events-none transition-opacity duration-300 space-y-4">
+          <h2 class="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">2. 對應欄位</h2>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">電話欄位 (必選)</label>
+            <select id="phoneColSelect" class="w-full border-gray-300 rounded-md shadow-sm border p-2 focus:ring-green-500 focus:border-green-500 bg-gray-50"></select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">稱呼/姓名欄位 (選填)</label>
+            <select id="nameColSelect" class="w-full border-gray-300 rounded-md shadow-sm border p-2 focus:ring-green-500 focus:border-green-500 bg-gray-50"></select>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">工作表 (Excel)</label>
+            <select id="sheetSelect" class="w-full border-gray-300 rounded-md shadow-sm border p-2 bg-gray-50" disabled></select>
+          </div>
+        </div>
+
+        <div id="messageConfig" class="opacity-50 pointer-events-none transition-opacity duration-300 space-y-4">
+          <div class="flex justify-between items-end border-b pb-2 mb-4">
+            <h2 class="text-xl font-semibold text-gray-700">3. 訊息設定</h2>
+            
+            <!-- 進階設定切換按鈕 -->
+            <button id="toggleAdvancedBtn" class="text-xs text-gray-500 hover:text-green-600 flex items-center transition-colors focus:outline-none">
+              <i class="fas fa-cog mr-1"></i> 進階設定 
+              <i id="advancedIcon" class="fas fa-chevron-down ml-1 transition-transform duration-300"></i>
+            </button>
+          </div>
+          
+          <!-- 進階設定區塊 (預設隱藏) -->
+          <div id="advancedSettings" class="hidden grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 mb-2">
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1">預設區號</label>
+              <input type="text" id="countryCode" value="852" class="w-full border p-2 rounded text-sm focus:ring-green-500 focus:border-green-500 text-center" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1">下載時的新欄位名稱</label>
+              <input type="text" id="newFieldName" value="WhatsApp連結" class="w-full border p-2 rounded text-sm focus:ring-green-500 focus:border-green-500" />
+            </div>
+          </div>
+
+          <!-- 常用範本快捷選擇 -->
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1.5"><i class="fas fa-bolt text-amber-500 mr-1"></i>常用範本（點擊即時套用）：</label>
+            <div class="flex flex-wrap gap-1.5">
+              <button type="button" onclick="applyTemplate('refund')" class="text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-full hover:bg-red-100 transition shadow-sm font-medium">
+                💳 退款通知
+              </button>
+              <button type="button" onclick="applyTemplate('priority')" class="text-xs bg-purple-50 text-purple-600 border border-purple-200 px-2.5 py-1 rounded-full hover:bg-purple-100 transition shadow-sm font-medium">
+                🚀 優先報名
+              </button>
+              <button type="button" onclick="applyTemplate('reminder')" class="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-full hover:bg-amber-100 transition shadow-sm font-medium">
+                📌 活動備忘錄
+              </button>
+            </div>
+          </div>
+
+          <!-- Emoji Picker 區域 -->
+          <div class="relative">
+            <div class="flex justify-between items-center mb-1">
+              <label class="block text-sm font-medium text-gray-700">預設訊息</label>
+              <span id="saveStatusTip" class="text-xs text-green-600 font-medium transition-opacity opacity-0"><i class="fas fa-check-circle mr-1"></i>已自動儲存</span>
+            </div>
+            
+            <div class="relative">
+              <textarea id="messageTpl" rows="5" class="w-full border p-2 text-sm rounded focus:ring-green-500 focus:border-green-500 pb-10" placeholder="你好 [Name]，這是關於 [活動名稱] 的通知..."></textarea>
+              
+              <!-- Emoji Trigger Button -->
+              <button id="emojiBtn" class="absolute bottom-2 left-2 text-gray-500 hover:text-yellow-500 text-xl transition-colors focus:outline-none">
+                <i class="far fa-smile"></i>
+              </button>
+
+              <!-- Emoji Picker Popup -->
+              <div id="emojiPicker" class="emoji-picker-container">
+                <!-- Categories -->
+                <div class="flex border-b bg-gray-50 px-2 pt-1 text-sm justify-between">
+                  <button class="emoji-category-btn active" data-cat="smileys"><i class="far fa-smile"></i></button>
+                  <button class="emoji-category-btn" data-cat="people"><i class="fas fa-hand-paper"></i></button>
+                  <button class="emoji-category-btn" data-cat="nature"><i class="fas fa-leaf"></i></button>
+                  <button class="emoji-category-btn" data-cat="objects"><i class="fas fa-gift"></i></button>
+                  <button class="emoji-category-btn" data-cat="symbols"><i class="fas fa-check"></i></button>
+                </div>
+                <!-- Grid -->
+                <div id="emojiGrid" class="emoji-grid">
+                  <!-- Emojis will be injected here -->
+                </div>
+              </div>
+            </div>
+
+            <!-- 動態變數區域 -->
+            <div class="mt-2 border rounded p-3 bg-gray-50">
+              <p class="text-xs text-gray-600 mb-2 font-medium"><i class="fas fa-magic text-yellow-500 mr-1"></i> 點擊下方變數插入至訊息（自動替換為 Excel 資料）：</p>
+              <div id="variableTags" class="flex flex-wrap gap-2">
+                <span class="text-xs text-gray-400">請先上載 Excel 檔案讀取欄位</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-4 border-t flex space-x-2">
+            <button id="generateBtn" class="btn-primary flex-1 py-2 px-4 rounded-lg font-bold shadow-lg flex justify-center items-center">
+              <span class="mr-2">生成連結</span>
+              <div class="loader" id="genLoader"></div>
+            </button>
+            <button id="resetBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition">重置</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右側：預覽與下載 -->
+      <div class="card p-6 lg:col-span-2 flex flex-col h-[800px]">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 border-b pb-3 gap-2">
+          <div>
+            <h2 class="text-xl font-semibold text-gray-700 flex items-center gap-2">
+              資料預覽 
+              <span id="stats" class="text-sm font-normal text-gray-500"></span>
+            </h2>
+            <!-- 進度條 -->
+            <div id="progressContainer" class="hidden items-center gap-2 mt-1">
+              <div class="w-32 bg-gray-200 rounded-full h-2 overflow-hidden">
+                <div id="progressBar" class="bg-green-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+              </div>
+              <span id="progressText" class="text-xs text-gray-500 font-medium">0/0 (0%)</span>
+            </div>
+          </div>
+
+          <!-- 狀態篩選與搜尋 -->
+          <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+            <!-- 篩選按鈕組 -->
+            <div id="filterGroup" class="hidden inline-flex rounded-md shadow-sm border bg-white p-0.5 text-xs">
+              <button onclick="setFilter('all')" id="filterAll" class="px-2.5 py-1 rounded font-medium bg-green-500 text-white">全部</button>
+              <button onclick="setFilter('unsent')" id="filterUnsent" class="px-2.5 py-1 rounded font-medium text-gray-600 hover:text-green-600">⏳ 未發送</button>
+              <button onclick="setFilter('sent')" id="filterSent" class="px-2.5 py-1 rounded font-medium text-gray-600 hover:text-green-600">✅ 已發送</button>
+            </div>
+
+            <input type="text" id="searchInput" placeholder="搜尋..." class="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 w-32 md:w-auto">
+            
+            <button id="downloadBtn" class="btn-secondary py-1 px-3 rounded shadow disabled:opacity-50 disabled:cursor-not-allowed text-sm" disabled>
+              <i class="fas fa-download mr-1"></i> 下載 Excel
+            </button>
+          </div>
+        </div>
+        
+        <!-- 左右橫拉表格容器 -->
+        <div class="flex-1 overflow-auto border rounded bg-gray-50 relative">
+          <table id="previewTable" class="min-w-full divide-y divide-gray-200 text-sm bg-white whitespace-nowrap">
+            <thead class="bg-gray-100 sticky top-0 z-10">
+              <tr id="tableHeader">
+                <th class="px-4 py-3 text-center text-gray-500">請先上載檔案</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody" class="divide-y divide-gray-200">
+              <!-- Data will be injected here -->
+            </tbody>
+          </table>
+          <div id="emptyState" class="absolute inset-0 flex items-center justify-center text-gray-400 flex-col pointer-events-none">
+            <i class="fas fa-file-excel text-6xl mb-4 opacity-20"></i>
+            <p>等待資料輸入...</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // --- 變數與狀態 ---
+    let workbook = null;
+    let rawData = [];
+    let headers = [];
+    let cleanData = [];
+    let headerRowIndex = 0;
+    let currentFilter = 'all'; // 'all' | 'unsent' | 'sent'
+
+    // 三個預設範本內容
+    const templates = {
+      refund: "你好 [Name]，關於活動 [活動名稱]（編號：[活動編號]），現通知閣下有關退款安排：\n\n退款原因：[退款原因]\n退款日期：[退款日期]\n\n收到訊息請回覆 OK，謝謝！",
+      priority: "你好 [Name]！這是關於 [活動名稱]（編號：[活動編號]）的優先報名通知。\n\n報名日期：[報名日期]\n\n收到訊息請回覆 OK，謝謝！",
+      reminder: "你好 [Name]，這是活動 [活動名稱]（編號：[活動編號]）的活動備忘錄：\n\n日期時間：[日期時間]\n集合時間：[集合時間]\n集合地點：[集合地點]\n備註：[備註]\n\n收到訊息請回覆 OK，謝謝！"
+    };
+
+    // 套用常用範本
+    window.applyTemplate = function(type) {
+      if (templates[type]) {
+        messageTpl.value = templates[type];
+        localStorage.setItem('wa_generator_msg_tpl', messageTpl.value);
+        showSaveTip();
+      }
+    };
+
+    // DOM Elements
+    const fileInput = document.getElementById('fileInput');
+    const sheetSelect = document.getElementById('sheetSelect');
+    const phoneColSelect = document.getElementById('phoneColSelect');
+    const nameColSelect = document.getElementById('nameColSelect');
+    const generateBtn = document.getElementById('generateBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const previewTable = document.getElementById('previewTable');
+    const tableHeader = document.getElementById('tableHeader');
+    const tableBody = document.getElementById('tableBody');
+    const emptyState = document.getElementById('emptyState');
+    const fileInfo = document.getElementById('fileInfo');
+    const stats = document.getElementById('stats');
+    const columnSelectors = document.getElementById('columnSelectors');
+    const messageConfig = document.getElementById('messageConfig');
+    const searchInput = document.getElementById('searchInput');
+    const variableTagsContainer = document.getElementById('variableTags');
+    const saveStatusTip = document.getElementById('saveStatusTip');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const filterGroup = document.getElementById('filterGroup');
+    
+    // UI Elements
+    const toggleAdvancedBtn = document.getElementById('toggleAdvancedBtn');
+    const advancedSettings = document.getElementById('advancedSettings');
+    const advancedIcon = document.getElementById('advancedIcon');
+
+    // Emoji Elements
+    const emojiBtn = document.getElementById('emojiBtn');
+    const emojiPicker = document.getElementById('emojiPicker');
+    const emojiGrid = document.getElementById('emojiGrid');
+    const messageTpl = document.getElementById('messageTpl');
+    const countryCodeInput = document.getElementById('countryCode');
+    const emojiCategoryBtns = document.querySelectorAll('.emoji-category-btn');
+
+    // Emoji Data Source
+    const emojiData = {
+      smileys: ['😀','😃','😄','😁','😅','😂','🤣','😊','😇','🙂','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕'],
+      people: ['👋','🤚','🖐','✋','🖖','👌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦵','🦶','耳','🦻','鼻','腦','齒','骨','👀','👁','舌','嘴','💋'],
+      nature: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🐦','🐤','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','蟻','🦟','🦗','🕷','🦂','🐢','🐍','蜥','🦖','🦕','🐙','🦑','蝦','龍蝦','蟹','🐡','🐠','魚','🐬','🐳','鯨','鯊','鱷','🐅',' Leopard',' Zebra','🦍','🦧','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','羊','🦙','🐐','鹿','🐕','🐩','🦮','🐕‍🦺','🐈','🐓','火雞','孔雀','鸚鵡','鵝','🦩','鴿','兔','浣熊','臭鼬','獾','水獺','樹懶','鼠','大鼠','花栗鼠','刺蝟','花束','🌸','💮','🏵','🌹','🥀','🌺','🌻','🌼','🌷','🌱','🌲','🌳','🌴','🌵','🌾','🌿','☘️','🍀','楓葉','🍂','🍃'],
+      objects: ['🎉','🎊','🎈','🎂','🎁','🎗','🎀','🎎','🏮','🎐','✉️','📩','📨','📧','💌','📅','📆','🗓','📍','📌','📢','📣','🔔','🔕','🎼','🎵','🎶','🎙','🎤','🎧','🎷','🎸','🎹','🎺','🎻','鼓','📱','📲','☎️','📞','📟','傳真','🔋','🔌','💻','🖥','🖨','⌨️','滑鼠','🖲','💽','💾','💿','📀','🧮','🎥','🎞','📽','🎬','📺','📷','📸','📹','📼','🔍','🔎','燭','💡','電筒','📕','📖','📝','💼','📁','📂','🗂','💰','圓','美金','歐元','英鎊','💸','💳','💎','⚖️','🧰','🔧','錘','⚒','🛠','⛏','螺絲','齒輪','磚','鏈','磁鐵','槍','炸彈','爆竹','斧','刀','短劍','劍','盾','香煙','棺材','骨灰罈','壺'],
+      symbols: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☪️','🕉','☸️','✡️','🔯','🕎','☯️','☦️','🛐','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','🆔','⚛️','🉑','☢️','☣️','📴','📳','🈶','🈚','🈸','🈺','🈷️','✴️','🆚','💮','🉐','㊙️','㊗️','🈴','🈵','🈹','🈲','🅰️','🅱️','🆎','🆑','🅾️','🆘','❌','⭕','🛑','⛔','📛','🚫','💯','💢','♨️','🚷','🚯','🚳','🚱','🔞','📵','🚭','❗','❕','❓','❔','‼️','⁉️','🔅','🔆','〽️','⚠️','🚸','🔱','⚜️','🔰','♻️','✅','🈯','💹','❇️','✳️','❎','🌐','💠','Ⓜ️','🌀','💤','🏧','🚾','♿','🅿️','🈳','🈂️',' passports','🛃','🛄','🛅','🚹','🚺','🚼','🚻','🚮','🎦','📶','🈁','🔣','ℹ️','🔤','🔡','🔠','🆖','🆗','🆙','🆒','🆕','🆓','0️⃣','1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟','🔢','#️⃣','*️⃣','⏏️','▶️','⏸','⏯','⏹','⏺','⏭','⏮','⏩','⏪','⏫','⏬','◀️','🔼','🔽','➡️','⬅️','⬆️','⬇️','↗️','↘️','↙️','↖️','↕️','↔️','↪️','↩️','⤴️','⤵️','🔀','🔁','🔂','🔄','🔃','🎵','🎶','➕','➖','➗','✖️','💲','💱','™️','©️','®️','〰️','➰','➿','🔚','🔙','🔛','🔝','🔜','✔️','☑️','🔘','🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪','🟤','🔺','🔻','🔸','🔹','🔶','🔷','🔳','🔲','▪️','▫️','◾','◽','◼️','◻️','🟥','🟧','🟨','🟩','🟦','🟪','⬛','⬜','🟫']
+    };
+
+    // --- 自動載入與儲存 LocalStorage ---
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedMsg = localStorage.getItem('wa_generator_msg_tpl');
+      if (savedMsg !== null) {
+        messageTpl.value = savedMsg;
+      }
+      const savedCountry = localStorage.getItem('wa_generator_country_code');
+      if (savedCountry !== null) {
+        countryCodeInput.value = savedCountry;
+      }
+    });
+
+    messageTpl.addEventListener('input', () => {
+      localStorage.setItem('wa_generator_msg_tpl', messageTpl.value);
+      showSaveTip();
+    });
+
+    countryCodeInput.addEventListener('input', () => {
+      localStorage.setItem('wa_generator_country_code', countryCodeInput.value.trim());
+    });
+
+    let saveTipTimer = null;
+    function showSaveTip() {
+      saveStatusTip.style.opacity = '1';
+      if (saveTipTimer) clearTimeout(saveTipTimer);
+      saveTipTimer = setTimeout(() => {
+        saveStatusTip.style.opacity = '0';
+      }, 1500);
+    }
+
+    // --- 事件監聽 ---
+    fileInput.addEventListener('change', handleFileSelect);
+    sheetSelect.addEventListener('change', (e) => loadSheet(e.target.value));
+    generateBtn.addEventListener('click', generateLinks);
+    downloadBtn.addEventListener('click', exportToExcel);
+    resetBtn.addEventListener('click', resetAll);
+    searchInput.addEventListener('input', renderTable);
+    
+    // 切換進階設定
+    toggleAdvancedBtn.addEventListener('click', () => {
+      advancedSettings.classList.toggle('hidden');
+      advancedIcon.classList.toggle('rotate-180');
+    });
+
+    // Emoji Events
+    emojiBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      emojiPicker.classList.toggle('active');
+      renderEmojiGrid('smileys');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!emojiPicker.contains(e.target) && e.target !== emojiBtn) {
+        emojiPicker.classList.remove('active');
+      }
+    });
+
+    emojiCategoryBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        emojiCategoryBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderEmojiGrid(btn.dataset.cat);
+      });
+    });
+
+    function renderEmojiGrid(category) {
+      emojiGrid.innerHTML = '';
+      const emojis = emojiData[category] || [];
+      emojis.forEach(emoji => {
+        const span = document.createElement('span');
+        span.className = 'emoji-item';
+        span.textContent = emoji;
+        span.onclick = (e) => {
+            e.stopPropagation();
+            insertText(emoji);
+        };
+        emojiGrid.appendChild(span);
+      });
+    }
+
+    window.insertText = function(text) {
+      const start = messageTpl.selectionStart;
+      const end = messageTpl.selectionEnd;
+      const value = messageTpl.value;
+      messageTpl.value = value.substring(0, start) + text + value.substring(end);
+      messageTpl.selectionStart = messageTpl.selectionEnd = start + text.length;
+      messageTpl.focus();
+      // 觸發儲存
+      localStorage.setItem('wa_generator_msg_tpl', messageTpl.value);
+      showSaveTip();
+    }
+
+    // 動態生成變數按鈕
+    function renderVariableTags(headersArray) {
+      variableTagsContainer.innerHTML = '';
+      
+      const nameTag = document.createElement('span');
+      nameTag.className = 'font-mono text-[13px] bg-green-100 text-green-700 px-2 py-1 rounded cursor-pointer hover:bg-green-200 transition shadow-sm border border-green-200';
+      nameTag.textContent = `[Name]`;
+      nameTag.title = "代表自動插入您在上方選擇的『稱呼/姓名欄位』";
+      nameTag.onclick = () => insertText(`[Name]`);
+      variableTagsContainer.appendChild(nameTag);
+
+      headersArray.forEach(h => {
+        if (!h) return;
+        const tag = document.createElement('span');
+        tag.className = 'font-mono text-[13px] bg-blue-50 text-blue-600 px-2 py-1 rounded cursor-pointer hover:bg-blue-100 transition shadow-sm border border-blue-200';
+        tag.textContent = `[${h}]`;
+        tag.onclick = () => insertText(`[${h}]`);
+        variableTagsContainer.appendChild(tag);
+      });
+    }
+
+    // --- 核心邏輯 ---
+
+    async function handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      fileInfo.textContent = `正在讀取：${file.name}...`;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          workbook = XLSX.read(data, {type: 'array'});
+          
+          sheetSelect.innerHTML = '';
+          workbook.SheetNames.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            sheetSelect.appendChild(option);
+          });
+          sheetSelect.disabled = workbook.SheetNames.length <= 1;
+
+          loadSheet(workbook.SheetNames[0]);
+          
+          columnSelectors.classList.remove('opacity-50', 'pointer-events-none');
+          messageConfig.classList.remove('opacity-50', 'pointer-events-none');
+          emptyState.style.display = 'none';
+          fileInfo.textContent = `已載入：${file.name}`;
+
+        } catch (error) {
+          console.error(error);
+          alert("讀取檔案失敗，請確認檔案格式是否正確。");
+          resetAll();
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function loadSheet(sheetName) {
+      const worksheet = workbook.Sheets[sheetName];
+      rawData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+
+      if (rawData.length === 0) {
+        alert("此工作表沒有資料！");
+        return;
+      }
+
+      headerRowIndex = findHeaderRow(rawData);
+      
+      headers = Array.from(rawData[headerRowIndex] || []).map(h => (h || "").toString().trim()); 
+      
+      updateSelectOptions(headers);
+      autoGuessColumns(headers);
+      renderVariableTags(headers); 
+      processDataForPreview();
+    }
+
+    function findHeaderRow(rows) {
+      const limit = Math.min(rows.length, 30);
+      const phoneKeywords = ['手提電話', '手提', '電話', 'phone', 'mobile', 'tel', 'whatsapp', 'contact'];
+      const nameKeywords = ['姓名', '中文姓名', '英文姓名', 'name', 'client', 'customer', 'student', '家長', '學生'];
+
+      let bestRowIndex = 0;
+      let maxScore = 0;
+
+      for (let i = 0; i < limit; i++) {
+        const row = rows[i];
+        if (!Array.isArray(row)) continue;
+        const rowStr = row.join(' ').toLowerCase();
+        let score = 0;
+
+        if (phoneKeywords.some(k => rowStr.includes(k))) score += 2;
+        if (nameKeywords.some(k => rowStr.includes(k))) score += 1;
+        const nonEmptyCols = row.filter(c => c).length;
+        if (nonEmptyCols > 2) score += 0.5;
+
+        if (score > maxScore) {
+          maxScore = score;
+          bestRowIndex = i;
+        }
+      }
+
+      if (maxScore > 0 && bestRowIndex > 0) {
+          fileInfo.textContent += ` (已自動過濾上方 ${bestRowIndex} 行報表資訊)`;
+      }
+      return bestRowIndex;
+    }
+
+    function updateSelectOptions(headerArray) {
+      const createOption = (text, index) => `<option value="${index}">${text || `(欄位 ${index+1})`}</option>`;
+      let optionsHTML = '<option value="">-- 請選擇 --</option>';
+      headerArray.forEach((header, index) => {
+        if (header || index < headerArray.length) {
+          optionsHTML += createOption(header, index);
+        }
+      });
+      phoneColSelect.innerHTML = optionsHTML;
+      nameColSelect.innerHTML = optionsHTML;
+    }
+
+    function autoGuessColumns(headerArray) {
+      const lowerHeaders = headerArray.map(h => (h || "").toString().toLowerCase());
+      
+      const phoneIdx = lowerHeaders.findIndex(h => {
+        if (!h) return false;
+        return h.includes('手提') || h.includes('mobile') || h.includes('電話') || h.includes('phone') || h.includes('tel');
+      });
+      if (phoneIdx !== -1) phoneColSelect.value = phoneIdx;
+      
+      const nameIdx = lowerHeaders.findIndex(h => {
+        if (!h) return false;
+        return h.includes('姓名') || h.includes('name') || h === 'user' || h === 'student';
+      });
+      if (nameIdx !== -1) nameColSelect.value = nameIdx;
+    }
+
+    function processDataForPreview() {
+      const dataRows = rawData.slice(headerRowIndex + 1);
+      cleanData = dataRows.map((row, rIdx) => {
+        let obj = { 
+          _id: rIdx,
+          _originalRowIndex: headerRowIndex + 1 + rIdx,
+          isSent: false
+        }; 
+        headers.forEach((h, i) => {
+           obj[i] = row[i];
+        });
+        return obj;
+      }).filter(row => {
+        return Object.keys(row).some(k => k !== '_id' && k !== '_originalRowIndex' && k !== 'isSent' && row[k] !== undefined && row[k] !== null && row[k] !== '');
+      });
+      renderTable();
+    }
+
+    // 篩選按鈕切換
+    window.setFilter = function(filter) {
+      currentFilter = filter;
+      const btnAll = document.getElementById('filterAll');
+      const btnUnsent = document.getElementById('filterUnsent');
+      const btnSent = document.getElementById('filterSent');
+
+      [btnAll, btnUnsent, btnSent].forEach(btn => {
+        btn.className = "px-2.5 py-1 rounded font-medium text-gray-600 hover:text-green-600";
+      });
+
+      if (filter === 'all') btnAll.className = "px-2.5 py-1 rounded font-medium bg-green-500 text-white";
+      if (filter === 'unsent') btnUnsent.className = "px-2.5 py-1 rounded font-medium bg-green-500 text-white";
+      if (filter === 'sent') btnSent.className = "px-2.5 py-1 rounded font-medium bg-green-500 text-white";
+
+      renderTable();
+    }
+
+    function updateProgress() {
+      if (cleanData.length === 0) {
+        progressContainer.classList.add('hidden');
+        filterGroup.classList.add('hidden');
+        return;
+      }
+      
+      progressContainer.classList.remove('hidden');
+      filterGroup.classList.remove('hidden');
+      progressContainer.classList.add('flex');
+
+      const total = cleanData.length;
+      const sentCount = cleanData.filter(d => d.isSent).length;
+      const percent = Math.round((sentCount / total) * 100);
+
+      progressBar.style.width = `${percent}%`;
+      progressText.textContent = `${sentCount}/${total} (${percent}%)`;
+    }
+
+    function renderTable() {
+      const limit = 200; 
+      const filterText = searchInput.value.toLowerCase();
+      const pIdx = phoneColSelect.value;
+      const nIdx = nameColSelect.value;
+
+      updateProgress();
+
+      let displayIndices = [];
+      headers.forEach((h, i) => {
+        if (i == pIdx || i == nIdx) return;
+        if (displayIndices.length < 3 && h) displayIndices.push(i);
+      });
+
+      let thHTML = '';
+      if (nIdx) thHTML += `<th class="px-4 py-3 text-left font-medium text-gray-700 bg-blue-50">姓名</th>`;
+      if (pIdx) thHTML += `<th class="px-4 py-3 text-left font-medium text-gray-700 bg-green-50">電話</th>`;
+      thHTML += `<th class="px-4 py-3 text-left font-medium text-gray-700 bg-yellow-50">生成連結 / 發送狀態</th>`; 
+      displayIndices.forEach(i => {
+        thHTML += `<th class="px-4 py-3 text-left text-gray-500">${headers[i] || `Col ${i+1}`}</th>`;
+      });
+      tableHeader.innerHTML = thHTML;
+
+      let filteredData = cleanData.filter(row => {
+        let matchesSearch = true;
+        if (filterText) {
+          matchesSearch = Object.values(row).some(val => String(val).toLowerCase().includes(filterText));
+        }
+
+        let matchesStatus = true;
+        if (currentFilter === 'sent') matchesStatus = row.isSent;
+        if (currentFilter === 'unsent') matchesStatus = !row.isSent;
+
+        return matchesSearch && matchesStatus;
+      });
+
+      const totalSent = cleanData.filter(d => d.isSent).length;
+      stats.textContent = `(已發送 ${totalSent} / 共 ${cleanData.length} 筆)`;
+      downloadBtn.disabled = cleanData.length === 0 || !document.getElementById('generatedLinkExists').value;
+
+      let tbodyHTML = '';
+      filteredData.slice(0, limit).forEach(row => {
+        const nameVal = nIdx ? (row[nIdx] || '') : '';
+        const phoneVal = pIdx ? (row[pIdx] || '') : '';
+        const isSent = row.isSent;
+        
+        const rowBgClass = isSent ? 'bg-green-50/60 hover:bg-green-100/60' : 'hover:bg-gray-50';
+
+        tbodyHTML += `<tr class="${rowBgClass} transition">`;
+        if (nIdx) tbodyHTML += `<td class="px-4 py-2 border-b font-medium text-gray-800">${nameVal}</td>`;
+        if (pIdx) tbodyHTML += `<td class="px-4 py-2 border-b text-gray-600 font-mono">${phoneVal}</td>`;
+        
+        if (row['generatedLink']) {
+             tbodyHTML += `
+              <td class="px-4 py-2 border-b flex items-center space-x-2">
+                <!-- 開啟連結 (自動標記為已發送) -->
+                <a href="${row['generatedLink']}" target="_blank" rel="noopener noreferrer" onclick="markAsSent(${row._id})" class="btn-primary px-3 py-1 rounded text-xs no-underline flex items-center font-medium shadow-sm">
+                  <i class="fab fa-whatsapp mr-1"></i> 開啟
+                </a>
+
+                <!-- 複製按鈕 -->
+                <button onclick="copyLink('${row['generatedLink']}', this)" class="btn-copy px-2 py-1 rounded text-xs border" title="複製連結">
+                  <i class="fas fa-copy"></i>
+                </button>
+
+                <!-- 手動切換發送標記按鈕 -->
+                <button onclick="toggleSent(${row._id})" class="text-xs px-2 py-1 rounded border transition flex items-center ${isSent ? 'bg-green-100 text-green-700 border-green-300 font-semibold' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}">
+                  <i class="fas ${isSent ? 'fa-check-circle text-green-600' : 'fa-circle text-gray-400'} mr-1"></i>
+                  ${isSent ? '已發送' : '未發送'}
+                </button>
+              </td>`;
+        } else {
+             tbodyHTML += `<td class="px-4 py-2 border-b text-gray-400 text-xs">尚未生成</td>`;
+        }
+
+        displayIndices.forEach(i => {
+           tbodyHTML += `<td class="px-4 py-2 border-b text-gray-500 text-xs">${row[i] || ''}</td>`;
+        });
+        tbodyHTML += `</tr>`;
+      });
+
+      tableBody.innerHTML = tbodyHTML;
+    }
+
+    // 標記為已發送 (點擊開啟連結時觸發)
+    window.markAsSent = function(id) {
+      const item = cleanData.find(d => d._id === id);
+      if (item) {
+        item.isSent = true;
+        renderTable();
+      }
+    };
+
+    // 切換已發送 / 未發送狀態
+    window.toggleSent = function(id) {
+      const item = cleanData.find(d => d._id === id);
+      if (item) {
+        item.isSent = !item.isSent;
+        renderTable();
+      }
+    };
+
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.id = 'generatedLinkExists';
+    document.body.appendChild(hiddenInput);
+
+    function generateLinks() {
+      const pIdx = phoneColSelect.value;
+      const nIdx = nameColSelect.value;
+      const country = document.getElementById('countryCode').value.trim();
+      const tpl = document.getElementById('messageTpl').value;
+
+      if (!pIdx) { alert("請先選擇電話欄位！"); return; }
+
+      const loader = document.getElementById('genLoader');
+      loader.style.display = 'block';
+
+      setTimeout(() => {
+        let successCount = 0;
+
+        cleanData.forEach(row => {
+          let rawPhone = String(row[pIdx] || '').trim();
+          let name = nIdx ? String(row[nIdx] || '').trim() : '';
+          let cleanPhone = rawPhone.replace(/[\s\-\(\)\.]/g, '');
+          
+          if (cleanPhone) {
+             if (!cleanPhone.startsWith(country) && !cleanPhone.startsWith('+')) {
+                 cleanPhone = country + cleanPhone;
+             }
+             cleanPhone = cleanPhone.replace('+', '');
+
+             let msg = tpl.replace(/\[Name\]/gi, name); 
+             
+             headers.forEach((h, idx) => {
+                 if (!h) return;
+                 const cellValue = (row[idx] !== undefined && row[idx] !== null) ? String(row[idx]) : '';
+                 const escapedHeader = h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                 const regex = new RegExp(`\\[${escapedHeader}\\]`, 'gi');
+                 msg = msg.replace(regex, cellValue);
+             });
+             
+             let encodedMsg = encodeURIComponent(msg);
+             
+             row['generatedLink'] = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodedMsg}`;
+             row['cleanPhone'] = cleanPhone; 
+             successCount++;
+          } else {
+             row['generatedLink'] = '';
+          }
+        });
+
+        loader.style.display = 'none';
+        document.getElementById('generatedLinkExists').value = "true";
+        renderTable();
+        alert(`成功為 ${successCount} 筆資料生成連結！`);
+      }, 100); 
+    }
+
+    function exportToExcel() {
+      if (cleanData.length === 0) return;
+
+      const newField = document.getElementById('newFieldName').value || 'WhatsApp Link';
+      
+      const exportData = cleanData.map(row => {
+        let newRow = {};
+        headers.forEach((h, i) => {
+            const key = h || `Column_${i+1}`;
+            newRow[key] = row[i];
+        });
+        newRow[newField] = row['generatedLink'];
+        newRow['發送狀態'] = row.isSent ? '已發送' : '未發送';
+        return newRow;
+      });
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "WhatsApp Links");
+
+      const dateStr = new Date().toISOString().slice(0,10);
+      XLSX.writeFile(wb, `WhatsApp_Contacts_${dateStr}.xlsx`);
+    }
+
+    function resetAll() {
+      workbook = null;
+      rawData = [];
+      headers = [];
+      cleanData = [];
+      headerRowIndex = 0;
+      fileInput.value = '';
+      sheetSelect.innerHTML = '';
+      sheetSelect.disabled = true;
+      phoneColSelect.innerHTML = '';
+      nameColSelect.innerHTML = '';
+      tableHeader.innerHTML = '<th class="px-4 py-3 text-center text-gray-500">請先上載檔案</th>';
+      tableBody.innerHTML = '';
+      stats.textContent = '';
+      fileInfo.textContent = '';
+      emptyState.style.display = 'flex';
+      columnSelectors.classList.add('opacity-50', 'pointer-events-none');
+      messageConfig.classList.add('opacity-50', 'pointer-events-none');
+      downloadBtn.disabled = true;
+      document.getElementById('generatedLinkExists').value = "";
+      variableTagsContainer.innerHTML = '<span class="text-xs text-gray-400">請先上載 Excel 檔案讀取欄位</span>';
+      
+      progressContainer.classList.add('hidden');
+      filterGroup.classList.add('hidden');
+
+      // 重置時收起進階設定
+      advancedSettings.classList.add('hidden');
+      advancedIcon.classList.remove('rotate-180');
+    }
+
+    // --- 複製功能 ---
+    window.copyLink = function(text, btnElement) {
+      navigator.clipboard.writeText(text).then(() => {
+        const originalHTML = btnElement.innerHTML;
+        btnElement.innerHTML = '<i class="fas fa-check"></i>';
+        btnElement.classList.add('copied');
+        
+        setTimeout(() => {
+          btnElement.innerHTML = originalHTML;
+          btnElement.classList.remove('copied');
+        }, 1500);
+      }).catch(err => {
+        console.error('複製失敗:', err);
+        alert('複製失敗，請手動選取');
+      });
+    }
+  </script>
+</body>
+</html>
+

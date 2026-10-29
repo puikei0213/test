@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>私隱政策 | 配記</title>
+    <meta name="description" content="了解配記網站及小工具如何處理本機輸入、雲端服務、廣告 Cookie 和網站連線資料。">
+    
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon-app.png">
+    
+    <script src="/components.js?v=8.3" defer></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="/style.css?v=8.2">
+
+    <style>
+        /* 專為法務/政策頁面設計的閱讀樣式 */
+        .policy-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: left;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            margin-bottom: 40px;
+            border: 1px solid #E2E8F0;
+        }
+        .policy-card h2 {
+            color: var(--primary);
+            font-size: 1.5rem;
+            margin-top: 35px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #E0F2FE;
+            padding-bottom: 10px;
+        }
+        .policy-card h2:first-of-type {
+            margin-top: 10px;
+        }
+        .policy-card p, .policy-card li {
+            color: var(--text-sub);
+            font-size: 1.05rem;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+        .policy-card strong {
+            color: var(--text-main);
+            font-weight: 700;
+        }
+        .policy-card ul {
+            margin-left: 20px;
+            margin-bottom: 25px;
+        }
+        .policy-card a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .policy-card a:hover {
+            text-decoration: underline;
+        }
+        
+        /* 針對小螢幕微調 */
+        @media (max-width: 600px) {
+            .policy-card { padding: 25px; }
+            .policy-card h2 { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <pui-kei-nav></pui-kei-nav>
+
+    <header class="site-header" style="padding: 50px 0 30px;">
+        <div class="container">
+            <h1 class="hero-headline" style="font-size: 2.5rem; margin-bottom: 10px;">私隱政策</h1>
+            <p class="brand-story" style="margin-bottom: 0;">保障你的個人資料，是我們的首要原則。</p>
+        </div>
+    </header>
+
+    <main class="container" style="max-width: 800px; padding-bottom: 60px;">
+        <div class="policy-card">
+            <p><strong>最後更新：2026年10月30日</strong></p>
+            <p>本頁說明「配記 Pui-Kei」（下稱「配記」）網站及小工具所涉及的資料處理。不同工具的資料流向不同，請同時閱讀使用中工具的提示。</p>
+
+            <h2>1. 在瀏覽器內運作的小工具</h2>
+            <p>幸運抽籤、計分板、分組器和白板等工具，通常會在你的瀏覽器內處理輸入內容。配記網站本身不會因為你在這些工具輸入名單、分數或畫作而收到該內容。某些工具會在瀏覽器的本機儲存區保存偏好設定；清除網站資料可刪除這些設定。首次載入或需要外部程式庫的頁面仍可能需要網絡。</p>
+
+            <h2>2. 連接雲端服務或後台的小工具</h2>
+            <ul>
+                <li><strong>星塵流體（Stardust Zen）：</strong>如你使用 AI 共鳴功能，你輸入的感受文字會傳送至 Google Gemini API，以產生回應。請勿輸入姓名、聯絡資料、個案內容或其他可識別個人的敏感資料。請參閱 <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Google 私隱政策</a>。</li>
+                <li><strong>預約功能：</strong>青年閣預約頁會將預約操作送往其 Google Apps Script 後台處理。本頁未列出該後台的保存期限；送出前請查看預約頁的資料提示，或向後台管理者查詢。</li>
+                <li><strong>AI 雲端工具：</strong>從 AI 雲端工具頁前往外部服務後，資料會按該服務的設定和私隱政策處理。</li>
+            </ul>
+
+            <h2>3. 網站連線資料及外部資源</h2>
+            <p>網站代管、內容傳遞及安全服務可能會處理 IP 地址、瀏覽器和裝置資料、請求時間及來源頁面等連線資訊，以提供網站並維持安全。網站亦會載入字型或程式庫等外部資源；你的瀏覽器在請求這些資源時會連接相關供應商。</p>
+
+            <h2>4. Google AdSense 與 Cookie</h2>
+            <p>配記部分頁面載入 Google AdSense。Google 及其廣告合作夥伴可能使用 Cookie、IP 地址或其他識別技術，按廣告服務需要處理資料。你可以在 <a href="https://adssettings.google.com/" target="_blank" rel="noopener noreferrer">Google 廣告設定</a>管理個人化廣告，並參閱 <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer">Google 如何使用廣告資料</a>。瀏覽器設定亦可管理 Cookie；停用後，部分外部功能可能無法正常運作。</p>
+
+            <h2>5. 資料保存及查詢</h2>
+            <p>只在瀏覽器內處理的內容一般不會傳送至配記；本機儲存的設定會留在你的裝置，直至你清除網站資料。雲端服務、網站代管及廣告供應商的保存方式由相關服務設定及政策決定。若要查詢配記可處理的資料，請使用 <a href="https://forms.gle/JYqK8oKGhbNr4m3x5" target="_blank" rel="noopener noreferrer">聯絡／許願表格</a>；請勿在表格中提交個案或其他敏感資料。</p>
+
+            <h2>6. 政策修訂</h2>
+            <p>網站功能或資料處理方式改變時，我們會更新本頁並修訂最後更新日期。</p>
+        </div>
+    </main>
+
+    <pui-kei-footer></pui-kei-footer>
+
+</body>
+</html>

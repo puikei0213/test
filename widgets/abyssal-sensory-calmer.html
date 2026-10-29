@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>寂靜深海解壓儀 | 配記</title>
+<script src="/components.js" defer></script>
+    
+    <style>
+        /* =========================================
+           🛡️ 核心防禦 CSS
+           ========================================= */
+        :root { --bg-color: #0c2146; --primary: #38bdf8; }
+        * { box-sizing: border-box; touch-action: none; }
+        body {
+            margin: 0; padding: 0; 
+            width: 100vw; height: 100dvh; 
+            overflow: hidden; 
+            background: var(--bg-color); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            user-select: none; -webkit-user-select: none; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        widget-nav, widget-modal { display: block; width: 100%; position: relative; z-index: 1000; }
+        
+        /* ✨ 修復：加入呢句「開門咒語」，說明書先會識得彈出嚟 */
+        .modal-overlay.show { display: flex !important; }
+
+        /* =========================================
+           🎨 工具專屬 UI CSS
+           ========================================= */
+        #app-container {
+            width: 100%; flex-grow: 1; position: relative;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* 控制面板 */
+        .calm-console {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(12, 33, 70, 0.85); 
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-top: 1px solid rgba(56, 189, 248, 0.2);
+            /* ✨ 修復：暴力推高 50px + iOS 安全區，完美避開手機底線 */
+            padding: 20px 25px calc(50px + env(safe-area-inset-bottom)); 
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .row-label {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #94a3b8;
+            white-space: nowrap;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.15);
+            height: 8px;
+            border-radius: 4px;
+            outline: none;
+            touch-action: auto; 
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.8);
+            cursor: pointer;
+        }
+
+        .audio-toggle-btn {
+            background: rgba(56, 189, 248, 0.15);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: var(--primary);
+            padding: 10px 18px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            touch-action: auto;
+        }
+        .audio-toggle-btn.muted {
+            color: #64748b;
+            border-color: rgba(255,255,255,0.15);
+            background: transparent;
+        }
+    </style>
+</head>
+<body>
+
+    <widget-nav></widget-nav>
+
+    <div id="app-container">
+        <canvas id="abyssCanvas"></canvas>
+        
+        <div class="calm-console">
+            <span class="row-label">水母浮力</span>
+            <input type="range" id="buoyancy-slider" min="5" max="30" value="12">
+            <button class="audio-toggle-btn muted" id="audio-btn" onclick="toggleAudio()">🔇 海浪聲</button>
+        </div>
+    </div>
+
+    <widget-modal>
+        <p><strong>社福應用場景：</strong></p>
+        <ul>
+            <li style="margin-bottom: 8px;"><strong>感官過載舒緩：</strong> 專為 ADHD/ASD 學童設計。畫面無競爭、無數字，手指隨意滑動即可孕育低速浮動的發光水母，轉移焦慮注意力。</li>
+            <li style="margin-bottom: 8px;"><strong>聽覺遮蔽效應：</strong> 內建 Web Audio 生成的深海粉紅噪聲（Pink Noise），能溫和覆蓋外界尖銳雜音，協助神經冷卻（需手動點擊開啟聲音）。</li>
+        </ul>
+    </widget-modal>
+
+    <script>
+        const canvas = document.getElementById('abyssCanvas');
+        const ctx = canvas.getContext('2d');
+        const buoyancySlider = document.getElementById('buoyancy-slider');
+        const audioBtn = document.getElementById('audio-btn');
+
+        let width, height;
+        let jellyfishGroup = [];
+        let globalBuoyancy = 0.12;
+        
+        let audioCtx, pinkNoiseNode, filterNode, isMuted = true;
+
+        function initCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', initCanvas);
+        initCanvas();
+
+        buoyancySlider.addEventListener('input', (e) => {
+            globalBuoyancy = parseInt(e.target.value) / 100;
+        });
+
+        function initAudioEngine() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            const bufferSize = 2 * audioCtx.sampleRate;
+            const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            
+            let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+            for (let i = 0; i < bufferSize; i++) {
+                const white = Math.random() * 2 - 1;
+                b0 = 0.99886 * b0 + white * 0.0555179;
+                b1 = 0.99332 * b1 + white * 0.0750759;
+                b2 = 0.96900 * b2 + white * 0.1538520;
+                b3 = 0.86650 * b3 + white * 0.3104856;
+                b4 = 0.55000 * b4 + white * 0.5329522;
+                b5 = -0.7616 * b5 - white * 0.0168980;
+                output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.15; 
+                b6 = white * 0.115926;
+            }
+
+            pinkNoiseNode = audioCtx.createBufferSource();
+            pinkNoiseNode.buffer = noiseBuffer;
+            pinkNoiseNode.loop = true;
+
+            filterNode = audioCtx.createBiquadFilter();
+            filterNode.type = 'lowpass';
+            filterNode.frequency.setValueAtTime(400, audioCtx.currentTime);
+
+            pinkNoiseNode.connect(filterNode);
+            pinkNoiseNode.start();
+        }
+
+        function toggleAudio() {
+            initAudioEngine();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            if (isMuted) {
+                filterNode.connect(audioCtx.destination);
+                audioBtn.innerText = "🔊 海浪聲";
+                audioBtn.classList.remove('muted');
+                isMuted = false;
+            } else {
+                filterNode.disconnect(audioCtx.destination);
+                audioBtn.innerText = "🔇 海浪聲";
+                audioBtn.classList.add('muted');
+                isMuted = true;
+            }
+        }
+
+        class AbyssalJellyfish {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.baseSize = Math.random() * 15 + 12; 
+                this.size = this.baseSize;
+                this.life = 200 + Math.random() * 100;
+                this.maxLife = this.life;
+                this.angleOffset = Math.random() * Math.PI * 2;
+                this.speedX = (Math.random() - 0.5) * 0.4;
+                
+                const hues = [190, 220, 280];
+                this.hue = hues[Math.floor(Math.random() * hues.length)];
+            }
+
+            update(tick) {
+                this.y -= globalBuoyancy; 
+                this.x += this.speedX + Math.sin(tick * 0.02 + this.angleOffset) * 0.3;
+                this.life--;
+                this.size = this.baseSize * (1 + Math.sin(tick * 0.05 + this.angleOffset) * 0.2);
+            }
+
+            draw() {
+                const alpha = Math.max(0, this.life / this.maxLife);
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                
+                let gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
+                gradient.addColorStop(0, `hsla(${this.hue}, 100%, 80%, 0.8)`);
+                gradient.addColorStop(0.5, `hsla(${this.hue}, 90%, 65%, 0.5)`);
+                gradient.addColorStop(1, `hsla(${this.hue}, 80%, 50%, 0)`);
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI, true);
+                ctx.fill();
+
+                ctx.strokeStyle = `hsla(${this.hue}, 100%, 75%, 0.5)`;
+                ctx.lineWidth = 1.5;
+                for (let i = -2; i <= 2; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(this.x + (i * (this.size * 0.25)), this.y);
+                    const cp1x = this.x + (i * this.size * 0.3) + Math.sin(this.life * 0.04 + i) * 6;
+                    const cp1y = this.y + this.size * 1.5;
+                    const cp2x = this.x + (i * this.size * 0.2) - Math.sin(this.life * 0.03 + i) * 4;
+                    const cp2y = this.y + this.size * 2.5;
+                    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, cp2x, this.y + this.size * 3.5);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+        }
+
+        let lastSpawnTime = 0;
+        
+        function handleInput(e) {
+            if (e.target.closest('.calm-console') || e.target.closest('widget-nav') || e.target.closest('widget-modal')) return;
+            e.preventDefault(); 
+
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+
+            const x = e.clientX || (e.touches && e.touches[0].clientX);
+            const y = e.clientY || (e.touches && e.touches[0].clientY);
+
+            const now = Date.now();
+            if (now - lastSpawnTime > 100) {
+                jellyfishGroup.push(new AbyssalJellyfish(x, y));
+                lastSpawnTime = now;
+            }
+
+            if (filterNode && !isMuted) {
+                const ratio = 1 - (y / height);
+                const targetFreq = 300 + (ratio * 600); 
+                filterNode.frequency.setTargetAtTime(targetFreq, audioCtx.currentTime, 0.1);
+            }
+        }
+
+        window.addEventListener('touchstart', handleInput, { passive: false });
+        window.addEventListener('touchmove', handleInput, { passive: false });
+        window.addEventListener('mousedown', handleInput, { passive: false });
+        window.addEventListener('mousemove', (e) => {
+            if (e.buttons > 0) handleInput(e); 
+        }, { passive: false });
+
+        let tick = 0;
+        function renderLoop() {
+            tick++;
+            
+            ctx.fillStyle = 'rgba(16, 42, 86, 0.35)';
+            ctx.fillRect(0, 0, width, height);
+
+            for (let i = jellyfishGroup.length - 1; i >= 0; i--) {
+                const j = jellyfishGroup[i];
+                j.update(tick);
+                j.draw();
+                if (j.life <= 0 || j.y < -50) jellyfishGroup.splice(i, 1);
+            }
+            requestAnimationFrame(renderLoop);
+        }
+        requestAnimationFrame(renderLoop);
+    </script>
+</body>
+</html>

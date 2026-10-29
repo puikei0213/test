@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>幻彩追蹤 | 配記</title>
+    <style>
+        :root {
+            --primary: #0066FF;
+            --bg-dark: #0f172a; /* 配合 Lucky Draw 的深藍灰底色 */
+            --success: #34C759;
+            --danger: #EF4444;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* 懸浮導航按鈕 (Lucky Draw Style) */
+        .top-nav-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            z-index: 100;
+            pointer-events: none; /* 讓中間空白區域可以點穿 */
+        }
+
+        .nav-btn {
+            pointer-events: auto;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: clamp(14px, 4vw, 16px);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* 遊戲主區域 */
+        #game-container {
+            flex: 1;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 霓虹數據列 */
+        .stats-bar {
+            position: absolute;
+            bottom: 30px; /* 移到底部，仿效控制台感覺 */
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            padding: 15px 30px;
+            border-radius: 50px;
+            display: flex;
+            gap: 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            z-index: 50;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .stat-value {
+            color: #FBBF24;
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+            font-size: 1.4rem;
+        }
+
+        /* 動態目標 */
+        #target {
+            position: absolute;
+            width: clamp(60px, 15vw, 100px);
+            height: clamp(60px, 15vw, 100px);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #target:active {
+            transform: scale(0.7) !important; /* 點擊時強烈擠壓感 */
+        }
+
+        /* 彈跳出場動畫 */
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            70% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .pop-animation {
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* 開始畫面與呼吸燈按鈕 */
+        .start-screen {
+            text-align: center;
+            z-index: 10;
+        }
+
+        .title {
+            font-size: clamp(2rem, 8vw, 3.5rem);
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            color: white;
+            text-shadow: 0 0 20px rgba(255,255,255,0.2);
+        }
+
+        .subtitle {
+            margin-bottom: 40px;
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(0, 102, 255, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(0, 102, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 102, 255, 0); }
+        }
+
+        .btn-main {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 16px 48px;
+            border-radius: 50px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            cursor: pointer;
+            animation: pulse-glow 2s infinite;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .btn-main:active {
+            transform: scale(0.95);
+            background: #0052cc;
+        }
+
+        /* 說明書 Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: #1e293b;
+            color: #f8fafc;
+            padding: clamp(20px, 5vw, 40px);
+            border-radius: 24px;
+            max-width: 500px;
+            width: 100%;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transform: translateY(20px);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-content h2 { color: #38bdf8; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        .modal-content p { line-height: 1.6; margin-bottom: 10px; color: #cbd5e1; }
+        .modal-content ul { padding-left: 20px; color: #cbd5e1; line-height: 1.6; }
+        .modal-content li { margin-bottom: 8px; }
+        
+        .close-btn {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 12px 24px;
+            border-radius: 12px;
+            width: 100%;
+            font-size: 1.1rem;
+            margin-top: 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .close-btn:active { background: rgba(255,255,255,0.2); }
+
+    </style>
+</head>
+<body>
+
+    <div class="top-nav-layer">
+        <a href="../index.html" class="nav-btn">← 首頁</a>
+        <button class="nav-btn" onclick="toggleModal(true)">ℹ️ 說明書</button>
+    </div>
+
+    <div id="game-container">
+        <div class="start-screen" id="start-screen">
+            <h1 class="title">幻彩追蹤</h1>
+            <p class="subtitle">點擊快速移動的目標，挑戰反應極限 🎯</p>
+            <button class="btn-main" onclick="startGame()">👉 點擊開始</button>
+        </div>
+
+        <div id="target" style="display:none"></div>
+
+        <div class="stats-bar" id="game-stats" style="display:none">
+            <span>得分: <span class="stat-value" id="score">0</span></span>
+            <span>時間: <span class="stat-value" id="timer">30</span>s</span>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal">
+        <div class="modal-content">
+            <h2>ℹ️ 工具說明書</h2>
+            <p><strong>社福應用場景：</strong></p>
+            <ul>
+                <li>👵 <strong>長者服務：</strong> 預防認知衰退，透過視覺追蹤訓練大腦對空間與色彩的靈敏度。</li>
+                <li>🧒 <strong>兒童/SEN服務：</strong> 提升注意力專注時長（Sustained Attention），改善手眼協調。</li>
+                <li>🧠 <strong>康復訓練：</strong> 提供低壓力的功能性視覺恢復練習。</li>
+            </ul>
+            <hr style="margin: 15px 0; border: 0; border-top: 1px solid rgba(255,255,255,0.1);">
+            <p><strong>💡 玩法：</strong> 在 30 秒內點擊不斷變換位置與顏色的圓球。得分越高，圓球會縮得越小！</p>
+            <button class="close-btn" onclick="toggleModal(false)">我明白了</button>
+        </div>
+    </div>
+
+    <script>
+        let score = 0;
+        let timeLeft = 30;
+        let gameActive = false;
+        let countdownInterval;
+
+        const target = document.getElementById('target');
+        const scoreEl = document.getElementById('score');
+        const timerEl = document.getElementById('timer');
+        const startScreen = document.getElementById('start-screen');
+        const statsBar = document.getElementById('game-stats');
+        const container = document.getElementById('game-container');
+        const modal = document.getElementById('modal');
+
+        // 預防 iOS 雙擊縮放及手勢干擾
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
+
+        function toggleModal(show) {
+            if (show) {
+                modal.classList.add('show');
+            } else {
+                modal.classList.remove('show');
+            }
+        }
+
+        function getRandomPos() {
+            // 預留安全邊距，避免按鈕被導航列或數據列遮擋
+            const paddingX = 40;
+            const paddingTop = 80; // 避開頂部按鈕
+            const paddingBottom = 100; // 避開底部數據列
+            
+            const maxX = container.clientWidth - target.clientWidth - paddingX;
+            const maxY = container.clientHeight - target.clientHeight - paddingBottom;
+            
+            return {
+                x: Math.max(paddingX, Math.random() * maxX),
+                y: Math.max(paddingTop, Math.random() * maxY)
+            };
+        }
+
+        function moveTarget() {
+            // 移除動畫 class 重置狀態
+            target.classList.remove('pop-animation');
+            
+            // 強制重繪以觸發下一次動畫
+            void target.offsetWidth;
+
+            const pos = getRandomPos();
+            target.style.left = `${pos.x}px`;
+            target.style.top = `${pos.y}px`;
+            
+            // 隨機鮮豔色彩 + 霓虹光暈
+            const colors = ['#0066FF', '#34C759', '#EF4444', '#FBBF24', '#a855f7', '#ec4899'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            target.style.background = randomColor;
+            target.style.boxShadow = `0 0 20px ${randomColor}, inset 0 0 10px rgba(255,255,255,0.5)`;
+            
+            // 加入彈跳動畫
+            target.classList.add('pop-animation');
+        }
+
+        function startGame() {
+            score = 0;
+            timeLeft = 30;
+            gameActive = true;
+            scoreEl.textContent = score;
+            timerEl.textContent = timeLeft;
+            
+            startScreen.style.display = 'none';
+            statsBar.style.display = 'flex';
+            target.style.display = 'flex';
+            
+            // 初始大小
+            target.style.width = '80px';
+            target.style.height = '80px';
+            
+            moveTarget();
+            
+            // 綁定觸控與點擊，消除延遲
+            target.ontouchstart = (e) => {
+                e.preventDefault();
+                handleHit();
+            };
+            target.onmousedown = (e) => {
+                if(e.button === 0) handleHit(); // 僅限左鍵
+            }
+
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+                timerEl.textContent = timeLeft;
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+        }
+
+        function handleHit() {
+            if (!gameActive) return;
+            score++;
+            scoreEl.textContent = score;
+            
+            // 震動回饋 (Android 支援)
+            if (navigator.vibrate) navigator.vibrate(15);
+            
+            // 增加難度：越打越細，極限 40px
+            const newSize = Math.max(40, 80 - (score * 1.5));
+            target.style.width = `${newSize}px`;
+            target.style.height = `${newSize}px`;
+            
+            moveTarget();
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(countdownInterval);
+            target.style.display = 'none';
+            statsBar.style.display = 'none';
+            startScreen.style.display = 'block';
+            
+            startScreen.innerHTML = `
+                <h1 class="title" style="color: var(--success); text-shadow: 0 0 20px rgba(52, 199, 89, 0.4);">時間到！</h1>
+                <p class="subtitle" style="font-size: 1.5rem; color: white;">你的反應力得分: <span style="color:#FBBF24; font-size:2rem; font-weight:bold;">${score}</span></p>
+                <button class="btn-main" onclick="location.reload()">🔄 再玩一次</button>
+            `;
+        }
+    </script>
+</body>
+</html>

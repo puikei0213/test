@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4-7-8 呼吸引導 | 配記</title>
+    <style>
+        body { 
+            margin:0; height:100vh; display:flex; flex-direction:column; 
+            align-items:center; justify-content:center; background:#1A1A2E; 
+            color:white; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; 
+            overflow: hidden; user-select: none; -webkit-user-select: none;
+        }
+        
+        .circle-container { 
+            position: relative; width: 260px; height: 260px; 
+            display: flex; align-items: center; justify-content: center; 
+            margin-bottom: 30px; 
+        }
+        
+        /* 外圍虛線圈 */
+        .circle-bg { 
+            position: absolute; width: 100%; height: 100%; 
+            border: 2px dashed rgba(90, 200, 250, 0.2); border-radius: 50%; 
+        }
+        
+        /* ✨ 新增：置中巨型倒數數字 */
+        .circle-number {
+            position: absolute;
+            font-size: 4.5rem;
+            font-weight: 800;
+            color: white;
+            z-index: 10;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            font-variant-numeric: tabular-nums;
+            transition: transform 0.3s ease;
+        }
+
+        /* 4-7-8 呼吸動畫 (總長 19秒) */
+        .circle { 
+            width: 80px; height: 80px; 
+            background: linear-gradient(135deg, #5AC8FA, #0066FF); 
+            border-radius: 50%; 
+            animation: breathe 19s infinite linear; 
+        }
+        
+        /* 核心魔法：為閉氣階段加入脈搏跳動感 */
+        @keyframes breathe {
+            0% { transform: scale(1); opacity: 0.7; box-shadow: 0 0 20px rgba(90,200,250,0.3); }
+            
+            /* 吸氣 4s (4/19 = 21.05%) */
+            21% { transform: scale(3.2); opacity: 1; box-shadow: 0 0 50px rgba(90,200,250,0.6); }
+            
+            /* 閉氣 7s - 微小跳動 (Pulse Effect) 增加生命力 */
+            27% { transform: scale(3.25); opacity: 1; box-shadow: 0 0 70px rgba(90,200,250,0.8); }
+            33% { transform: scale(3.2); opacity: 1; box-shadow: 0 0 50px rgba(90,200,250,0.6); }
+            39% { transform: scale(3.25); opacity: 1; box-shadow: 0 0 70px rgba(90,200,250,0.8); }
+            45% { transform: scale(3.2); opacity: 1; box-shadow: 0 0 50px rgba(90,200,250,0.6); }
+            51% { transform: scale(3.25); opacity: 1; box-shadow: 0 0 70px rgba(90,200,250,0.8); }
+            58% { transform: scale(3.2); opacity: 1; box-shadow: 0 0 50px rgba(90,200,250,0.6); } 
+            
+            /* 呼氣 8s */
+            100% { transform: scale(1); opacity: 0.7; box-shadow: 0 0 20px rgba(90,200,250,0.3); }
+        }
+        
+        .text-container { text-align: center; height: 80px; }
+        
+        /* 動態顏色文字 */
+        p#status { 
+            font-size: 2.5rem; font-weight: 800; margin: 0; 
+            letter-spacing: 4px; transition: color 0.5s ease; 
+        }
+        .sub-text { font-size: 1.1rem; color: #94A3B8; margin-top: 8px; font-weight: 500; }
+
+        /* 統一懸浮導航列 */
+        .top-nav { position: fixed; top: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; z-index: 100; pointer-events: none; }
+        .nav-btn { pointer-events: auto; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); color: white; text-decoration: none; padding: 10px 20px; border-radius: 50px; font-weight: bold; font-size: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.2); cursor: pointer; transition: 0.2s; }
+        .nav-btn:hover, .nav-btn:active { background: rgba(255,255,255,0.25); transform: scale(0.95); }
+
+        /* 說明書 Modal */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(5px); }
+        .modal-content { background: white; color: #333; padding: 30px; border-radius: 20px; max-width: 400px; }
+        .modal-content h2 { margin-top: 0; color: #0066FF; }
+        .modal-content p { font-size: 1rem; line-height: 1.6; }
+        .close-btn { width: 100%; background: #0066FF; color: white; border: none; padding: 12px; border-radius: 12px; font-size: 1rem; font-weight: bold; margin-top: 20px; cursor: pointer; transition: 0.2s; }
+        .close-btn:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+    <div class="top-nav">
+        <a href="../index.html" class="nav-btn">← 首頁</a>
+        <button class="nav-btn" onclick="toggleInfo()">ℹ️ 說明書</button>
+    </div>
+
+    <div class="circle-container">
+        <div class="circle-bg"></div>
+        <div class="circle"></div>
+        <div class="circle-number" id="countdown-num">4</div>
+    </div>
+    
+    <div class="text-container">
+        <p id="status">準備開始</p>
+        <div class="sub-text">跟隨圓圈節奏呼吸</div>
+    </div>
+
+    <div id="infoModal" class="modal" onclick="toggleInfo()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2>🧘 4-7-8 放鬆呼吸法</h2>
+            <p><strong>應用場景：</strong></p>
+            <p>1. <strong>個案輔導/小組：</strong> 在面談或小組開始前，引導服務對象（如情緒困擾青年、壓力家長）進行3分鐘靜觀，平復情緒。<br>
+               2. <strong>員工減壓：</strong> 放置於辦公室或工餘時間使用，幫助同工舒緩前線工作壓力。</p>
+            <p style="color:#666; font-size:0.9rem;">* 醫學原理：吸氣 4 秒，閉氣 7 秒，呼氣 8 秒，能有效啟動副交感神經，減輕焦慮及幫助入睡。</p>
+            <button class="close-btn" onclick="toggleInfo()">開始靜心</button>
+        </div>
+    </div>
+
+    <script>
+        const text = document.getElementById('status');
+        const num = document.getElementById('countdown-num');
+        let timeInCycle = 0;
+        
+        function toggleInfo() {
+            const modal = document.getElementById('infoModal');
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        // 動態倒數與顏色切換邏輯
+        function updateBreathe() {
+            if (timeInCycle < 4) {
+                // 吸氣階段 (4秒)
+                text.innerText = "吸氣";
+                text.style.color = "#5AC8FA"; // 清新藍
+                num.innerText = 4 - timeInCycle;
+                num.style.transform = "scale(1)";
+            } else if (timeInCycle < 11) {
+                // 閉氣階段 (7秒)
+                text.innerText = "閉氣";
+                text.style.color = "#FBBF24"; // 警示黃
+                num.innerText = 11 - timeInCycle;
+                // 閉氣時數字會跟隨微小脈搏跳動
+                num.style.transform = (timeInCycle % 2 === 0) ? "scale(1.08)" : "scale(1)";
+            } else {
+                // 呼氣階段 (8秒)
+                text.innerText = "呼氣";
+                text.style.color = "#34C759"; // 治癒綠
+                num.innerText = 19 - timeInCycle;
+                num.style.transform = "scale(1)";
+            }
+            timeInCycle = (timeInCycle + 1) % 19;
+        }
+        
+        // 立即啟動並設定每秒同步更新
+        updateBreathe();
+        setInterval(updateBreathe, 1000);
+    </script>
+</body>
+</html>

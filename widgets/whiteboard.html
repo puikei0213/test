@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>網上白板 | 配記</title>
+    <style>
+        body { margin:0; overflow:hidden; background:#F8FAFC; font-family:-apple-system, sans-serif; touch-action: none; }
+        
+        .top-nav { position: fixed; top: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; z-index: 100; pointer-events: none; }
+        .nav-btn { pointer-events: auto; background: rgba(255,255,255,0.8); backdrop-filter: blur(10px); color: #0066FF; text-decoration: none; padding: 10px 20px; border-radius: 50px; font-weight: bold; border: 1px solid #E2E8F0; box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer; }
+
+        canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; }
+        
+        /* ✨ 新增：自訂擦字膠游標 */
+        #eraser-cursor {
+            position: fixed;
+            pointer-events: none; /* 確保不會阻擋畫畫點擊 */
+            width: 40px; 
+            height: 40px;
+            border: 2px solid #94A3B8;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            z-index: 9999;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .toolbar { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: white; padding: 10px 20px; border-radius: 50px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: flex; gap: 15px; align-items: center; border: 1px solid #E2E8F0; z-index: 100; flex-wrap: wrap; justify-content: center; width: max-content; max-width: 95vw; }
+        
+        .color-btn { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: 0.2s; flex-shrink: 0; position: relative; overflow: hidden; }
+        .color-btn.active { transform: scale(1.2); border-color: #333; box-shadow: 0 0 10px rgba(0,0,0,0.2); }
+        
+        /* ✨ 新增：自訂色輪按鈕設計 */
+        .rainbow-btn { background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red); }
+        .rainbow-btn input[type="color"] { position: absolute; opacity: 0; width: 200%; height: 200%; top: -50%; left: -50%; cursor: pointer; }
+        
+        .tool-btn { background: #F1F5F9; color: #475569; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
+        .tool-btn.active { background: #CBD5E1; color: #1E293B; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+        .tool-btn:active { transform: scale(0.95); }
+
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: white; padding: 30px; border-radius: 20px; max-width: 400px; }
+        .modal-content h2 { margin-top: 0; color: #0066FF; }
+        .close-btn { width: 100%; background: #0066FF; color: white; border: none; padding: 12px; border-radius: 12px; font-size: 1rem; font-weight: bold; margin-top: 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="top-nav">
+        <a href="../index.html" class="nav-btn">← 首頁</a>
+        <button class="nav-btn" onclick="toggleInfo(event)">ℹ️ 說明書</button>
+    </div>
+
+    <div id="eraser-cursor"></div>
+
+    <canvas id="board"></canvas>
+
+    <div class="toolbar">
+        <div class="color-btn active" style="background:#1E293B;" onclick="setColor('#1E293B', this)"></div>
+        <div class="color-btn" style="background:#EF4444;" onclick="setColor('#EF4444', this)"></div>
+        <div class="color-btn" style="background:#3B82F6;" onclick="setColor('#3B82F6', this)"></div>
+        <div class="color-btn" style="background:#22C55E;" onclick="setColor('#22C55E', this)"></div>
+        
+        <div class="color-btn rainbow-btn" id="customColorBtn" title="選擇自訂顏色">
+            <input type="color" id="colorPicker" oninput="setColor(this.value, document.getElementById('customColorBtn'))">
+        </div>
+        
+        <div style="width: 2px; height: 30px; background: #E2E8F0; margin: 0 5px;"></div>
+        
+        <button class="tool-btn" onclick="setColor('#F8FAFC', this, true)">Eraser 🧽</button>
+        <button class="tool-btn" onclick="clearBoard()">Clear 🗑️</button>
+        <button class="tool-btn" onclick="saveImage()">Save 💾</button>
+    </div>
+
+    <div id="infoModal" class="modal" onclick="toggleInfo(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2>🖌️ 網上白板</h2>
+            <p><strong>應用場景：</strong></p>
+            <p>1. <strong>「畫畫估估」遊戲：</strong> iPad 駁上大電視，即刻可以變身大畫板玩猜畫遊戲。<br>
+               2. <strong>臨時解說/草稿：</strong> 輔導或面談時，用來畫圖解釋複雜概念（如家庭關係圖），一鍵清除，不會留低敏感紀錄。<br>
+               3. <strong>長者寫字板：</strong> 適合不習慣打字的長者，直接用手寫出心聲。</p>
+            <button class="close-btn" onclick="toggleInfo(event)">開始繪畫</button>
+        </div>
+    </div>
+
+    <script>
+        function toggleInfo(e) {
+            if(e) e.stopPropagation();
+            const modal = document.getElementById('infoModal');
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        const canvas = document.getElementById('board');
+        const ctx = canvas.getContext('2d');
+        const cursor = document.getElementById('eraser-cursor');
+        
+        let isDrawing = false;
+        let currentColor = '#1E293B';
+        let isEraserMode = false;
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            // 重新填滿底色
+            const oldColor = ctx.fillStyle;
+            ctx.fillStyle = '#F8FAFC';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = oldColor;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // ✨ 統一設定顏色與模式的函數
+        function setColor(color, element, isEraser = false) {
+            currentColor = color;
+            isEraserMode = isEraser;
+            
+            // 設定筆觸粗幼：筆是 6px，擦膠是 40px
+            ctx.lineWidth = isEraserMode ? 40 : 6;
+            
+            // 處理按鈕的 Active 狀態
+            document.querySelectorAll('.color-btn, .tool-btn').forEach(btn => btn.classList.remove('active'));
+            if(element) element.classList.add('active');
+
+            // 處理游標顯示
+            if (isEraserMode) {
+                canvas.style.cursor = 'none'; // 隱藏原本的十字準星
+            } else {
+                canvas.style.cursor = 'crosshair';
+                cursor.style.display = 'none'; // 隱藏自訂圓圈
+            }
+        }
+
+        function clearBoard() {
+            ctx.fillStyle = '#F8FAFC';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function saveImage() {
+            const link = document.createElement('a');
+            link.download = 'puikei-whiteboard.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function startPosition(e) {
+            isDrawing = true;
+            draw(e);
+        }
+
+        function endPosition() {
+            isDrawing = false;
+            ctx.beginPath();
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault(); 
+            
+            let x = e.clientX || (e.touches && e.touches[0].clientX);
+            let y = e.clientY || (e.touches && e.touches[0].clientY);
+
+            ctx.strokeStyle = currentColor;
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+
+        // ✨ 追蹤游標位置以顯示擦字膠圓圈
+        function updateCursor(e) {
+            if (!isEraserMode) return;
+            
+            let x = e.clientX || (e.touches && e.touches[0].clientX);
+            let y = e.clientY || (e.touches && e.touches[0].clientY);
+            
+            if (x !== undefined && y !== undefined) {
+                cursor.style.left = x + 'px';
+                cursor.style.top = y + 'px';
+                cursor.style.display = 'block';
+            }
+        }
+
+        // 綁定畫圖事件
+        canvas.addEventListener('mousedown', startPosition);
+        canvas.addEventListener('mouseup', endPosition);
+        canvas.addEventListener('mousemove', draw);
+        
+        canvas.addEventListener('touchstart', startPosition, {passive: false});
+        canvas.addEventListener('touchend', endPosition);
+        canvas.addEventListener('touchmove', draw, {passive: false});
+
+        // 綁定擦膠游標事件
+        canvas.addEventListener('mousemove', updateCursor);
+        canvas.addEventListener('touchmove', updateCursor, {passive: false});
+        
+        // 游標離開畫面時隱藏擦膠
+        canvas.addEventListener('mouseleave', () => { cursor.style.display = 'none'; });
+        canvas.addEventListener('touchend', () => { cursor.style.display = 'none'; });
+    </script>
+</body>
+</html>

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>社交微調解碼儀 | 配記 Pui-Kei</title>
+<script src="/components.js" defer></script>
+    
+    <style>
+        :root {
+            --bg-dark: #090d16;
+            --cue-safe: #10b981;
+            --cue-warn: #f43f5e;
+            --cue-neutral: #6366f1;
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        * { box-sizing: border-box; touch-action: none; }
+        
+        body {
+            margin: 0; padding: 0;
+            width: 100vw; height: 100dvh;
+            overflow: hidden; 
+            background-color: var(--bg-dark);
+            color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            user-select: none; -webkit-user-select: none;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+
+        widget-nav, widget-modal { display: block; width: 100%; }
+        
+        .modal-overlay.show { display: flex !important; }
+
+        #app-container {
+            width: 100%; height: 100%; position: relative;
+            display: flex; flex-direction: column;
+        }
+
+        #decoder-space {
+            flex: 1; position: relative; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+        .feedback-overlay {
+            position: absolute; top: 90px; left: 50%; transform: translateX(-50%);
+            background: rgba(9, 13, 22, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border); padding: 10px 20px;
+            border-radius: 20px; z-index: 10; text-align: center;
+            width: 85%; max-width: 360px; pointer-events: none;
+        }
+
+        .cue-status { font-size: 1.1rem; font-weight: 800; letter-spacing: 1px; margin-bottom: 4px; transition: color 0.3s; }
+
+        .tuner-console {
+            background: rgba(9, 13, 22, 0.85); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border-top: 1px solid var(--glass-border); 
+            /* 🛡️ 關鍵修復：大幅增加底部 Padding 並加入 iPhone Safe Area，避免拉出 App 外 */
+            padding: 20px 25px calc(60px + env(safe-area-inset-bottom));
+            display: flex; flex-direction: column; gap: 16px; z-index: 50; width: 100%;
+        }
+
+        .slider-group { display: flex; align-items: center; gap: 15px; }
+        .slider-label { font-size: 0.85rem; font-weight: 600; color: #94a3b8; width: 70px; text-align: right; }
+
+        input[type="range"] {
+            flex: 1; -webkit-appearance: none; background: rgba(255, 255, 255, 0.08);
+            height: 6px; border-radius: 3px; outline: none; touch-action: auto; 
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%;
+            background: var(--cue-neutral); box-shadow: 0 0 10px var(--cue-neutral);
+            cursor: pointer; transition: transform 0.1s;
+        }
+        input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); }
+    </style>
+</head>
+<body>
+
+    <widget-nav></widget-nav>
+
+    <div id="app-container">
+        <div id="decoder-space">
+            <div class="feedback-overlay">
+                <div class="cue-status" id="status-title" style="color: var(--cue-neutral);">😐 處於觀望/中立狀態</div>
+                <div style="font-size: 0.8rem; color: #64748b;" id="status-desc">調整下方控制台來觀察非言語表達的轉變</div>
+            </div>
+            <canvas id="meshCanvas"></canvas>
+        </div>
+
+        <div class="tuner-console">
+            <div class="slider-group">
+                <span class="slider-label">眼神防線</span>
+                <input type="range" id="eye-slider" min="-50" max="50" value="0">
+            </div>
+            <div class="slider-group">
+                <span class="slider-label">嘴角波動</span>
+                <input type="range" id="mouth-slider" min="-50" max="50" value="0">
+            </div>
+        </div>
+    </div>
+
+    <widget-modal>
+        <p style="margin-bottom: 12px;">本工具專為<strong>自閉症光譜（ASD）</strong>、<strong>社交障礙</strong>或<strong>跨文化適應</strong>對象研發，採用「具象化情感面具」訓練：</p>
+        <ul style="padding-left: 20px; margin-bottom: 15px;">
+            <li style="margin-bottom: 8px;"><strong>非言語線索拆解：</strong> 將複雜的人際面部表情拆解為「眼神」與「嘴角」兩個獨立的物理滑桿。</li>
+            <li style="margin-bottom: 8px;"><strong>情感光譜微調：</strong> 當兩者皆調至正值，系統判定為「接納/安全」；若偏向極端負值，則轉化為「防衛/緊繃」的尖銳線條。</li>
+            <li style="margin-bottom: 8px;"><strong>安全去標籤化：</strong> 在無壓力的數位環境下，直觀感知微表情的漸變過程。</li>
+        </ul>
+        <p style="font-size: 0.85rem; color: #1e293b; border-top: 1px solid #e2e8f0; padding-top: 10px;">
+            💡 應用提示：適合個別輔導時作為社交技巧小組的開場引導。
+        </p>
+    </widget-modal>
+
+    <script>
+        const canvas = document.getElementById('meshCanvas');
+        const ctx = canvas.getContext('2d');
+        const eyeSlider = document.getElementById('eye-slider');
+        const mouthSlider = document.getElementById('mouth-slider');
+        const statusTitle = document.getElementById('status-title');
+        const statusDesc = document.getElementById('status-desc');
+
+        let width, height;
+        let eyeVal = 0, mouthVal = 0;
+        let currentEye = 0, currentMouth = 0; 
+        let audioCtx;
+
+        function initCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', initCanvas);
+        initCanvas();
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playFeedbackTone(isSafe) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(isSafe ? 392.00 : 220.00, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.6);
+        }
+
+        const updateCues = () => {
+            initAudio();
+            eyeVal = parseInt(eyeSlider.value);
+            mouthVal = parseInt(mouthSlider.value);
+        };
+        
+        eyeSlider.addEventListener('input', updateCues);
+        mouthSlider.addEventListener('input', updateCues);
+
+        let lastStatus = "";
+        function updateStatusText(label, desc, colorClass) {
+            if (lastStatus === label) return;
+            lastStatus = label;
+            statusTitle.innerText = label;
+            statusTitle.style.color = `var(${colorClass})`;
+            statusDesc.innerText = desc;
+            
+            const isSafe = colorClass === '--cue-safe';
+            playFeedbackTone(isSafe);
+            
+            if (navigator.vibrate) {
+                try { navigator.vibrate(isSafe ? 15 : [20, 40]); } catch(e) {}
+            }
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(9, 13, 22, 0.25)'; 
+            ctx.fillRect(0, 0, width, height);
+
+            currentEye += (eyeVal - currentEye) * 0.12;
+            currentMouth += (mouthVal - currentMouth) * 0.12;
+
+            const centerX = width * 0.5;
+            const centerY = height * 0.42;
+
+            if (currentEye > 15 && currentMouth > 15) {
+                updateStatusText("✨ 接納與開放的訊號", "眼神放鬆，嘴角上揚。對方目前處於高度安全的心理狀態，適合深入交談。", "--cue-safe");
+                document.documentElement.style.setProperty('--cue-neutral', '#10b981');
+            } else if (currentEye < -15 && currentMouth < -15) {
+                updateStatusText("⚠️ 防衛與緊繃的訊號", "眼神迴避/凝視過度，嘴角下收。對方已築起心理防線，建議放緩節奏。", "--cue-warn");
+                document.documentElement.style.setProperty('--cue-neutral', '#f43f5e');
+            } else {
+                updateStatusText("😐 處於觀望/中立狀態", "非言語線索尚不明顯，對方正在評估當前的社交環境安全感。", "--cue-neutral");
+                document.documentElement.style.setProperty('--cue-neutral', '#6366f1');
+            }
+
+            ctx.save();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = document.documentElement.style.getPropertyValue('--cue-neutral') || '#6366f1';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = ctx.strokeStyle;
+
+            ctx.beginPath();
+            ctx.arc(centerX - 50, centerY - 10 + (currentEye * 0.2), 15 + (currentEye * 0.1), 0, Math.PI, true);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(centerX + 50, centerY - 10 + (currentEye * 0.2), 15 + (currentEye * 0.1), 0, Math.PI, true);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(centerX - 40, centerY + 50 - (currentMouth * 0.2));
+            ctx.quadraticCurveTo(centerX, centerY + 50 + (currentMouth * 0.6), centerX + 40, centerY + 50 - (currentMouth * 0.2));
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.setLineDash([4, 8]);
+            ctx.arc(centerX, centerY + 15, 110 + (currentEye * 0.3), 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            ctx.restore();
+            requestAnimationFrame(animate);
+        }
+
+        requestAnimationFrame(animate);
+    </script>
+</body>
+</html>

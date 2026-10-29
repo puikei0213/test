@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Stardust Zen | 配記</title>
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000000;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: white;
+        }
+        
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1; /* 確保在底層 */
+        }
+
+        /* ✨ 統一懸浮導航列 (深色模式適配) */
+        .top-nav { 
+            position: fixed; 
+            top: 20px; left: 20px; right: 20px; 
+            display: flex; justify-content: space-between; 
+            z-index: 100; pointer-events: none; 
+        }
+        .nav-btn { 
+            pointer-events: auto; 
+            background: rgba(255, 255, 255, 0.1); 
+            backdrop-filter: blur(10px); 
+            color: white; text-decoration: none; 
+            padding: 10px 20px; border-radius: 50px; 
+            font-weight: bold; font-size: 1rem; 
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+            cursor: pointer; transition: 0.2s; 
+        }
+        .nav-btn:hover { background: rgba(255, 255, 255, 0.2); }
+
+        #ui-layer {
+            position: absolute;
+            top: 80px; /* 調低避開 top-nav */
+            left: 20px;
+            pointer-events: none;
+            color: rgba(255, 255, 255, 0.6);
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            margin: 0 0 5px 0;
+            font-weight: 300;
+            letter-spacing: 2px;
+            opacity: 0.8;
+        }
+
+        #ai-message {
+            margin-top: 10px;
+            font-size: 1rem;
+            color: #aaddff;
+            text-shadow: 0 0 5px rgba(100, 200, 255, 0.3);
+            opacity: 0;
+            transition: opacity 2s ease;
+            max-width: 300px;
+            line-height: 1.6;
+            font-style: italic;
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            pointer-events: auto;
+            z-index: 10;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 95%;
+        }
+
+        .btn {
+            background: rgba(40, 40, 40, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #ddd;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            backdrop-filter: blur(4px);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn:active { transform: scale(0.95); }
+
+        .btn.active {
+            background: rgba(100, 200, 255, 0.2);
+            border-color: rgba(100, 200, 255, 0.5);
+            color: white;
+        }
+
+        .btn-ai {
+            background: linear-gradient(135deg, rgba(80, 40, 180, 0.5), rgba(180, 40, 100, 0.5));
+            border-color: rgba(220, 180, 255, 0.4);
+        }
+
+        .btn-mute {
+            font-size: 1.2rem;
+            padding: 10px 15px;
+        }
+
+        /* 彈窗共通樣式 (適用於 AI 共鳴及說明書) */
+        .modal {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(8px);
+            z-index: 200;
+            justify-content: center;
+            align-items: center;
+            touch-action: auto;
+        }
+
+        .modal-content {
+            background: #111;
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            width: 85%;
+            max-width: 400px;
+        }
+
+        /* 說明書專用覆寫 */
+        #info-modal .modal-content { text-align: left; }
+        #info-modal h2 { margin-top: 0; color: #aaddff; font-weight: 300; letter-spacing: 1px; }
+        #info-modal p { font-size: 0.95rem; line-height: 1.6; color: #ccc; margin-bottom: 15px;}
+        .close-btn { width: 100%; background: rgba(100, 200, 255, 0.2); color: white; border: 1px solid rgba(100, 200, 255, 0.5); padding: 12px; border-radius: 12px; font-size: 1rem; margin-top: 20px; cursor: pointer; }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            background: #222;
+            border: 1px solid #444;
+            border-radius: 12px;
+            color: #eee;
+            padding: 12px;
+            margin: 20px 0;
+            font-size: 1rem;
+            outline: none;
+        }
+        
+        textarea:focus { border-color: #666; }
+        
+        .loader {
+            display: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #fff;
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            animation: rotation 1s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div class="top-nav">
+        <a href="../index.html" class="nav-btn">← 首頁</a>
+        <button class="nav-btn" onclick="toggleInfo()">ℹ️ 說明書</button>
+    </div>
+
+    <div id="ui-layer">
+        <h1>STARDUST ZEN</h1>
+        <div id="ai-message"></div>
+    </div>
+
+    <div id="controls">
+        <button class="btn active" id="mode-flow" onclick="setMode('flow')">流動</button>
+        <button class="btn" id="mode-orbit" onclick="setMode('orbit')">引力</button>
+        <button class="btn btn-ai" onclick="openAIModal()">✨ AI 共鳴</button>
+        <button class="btn btn-mute" id="mute-btn" onclick="toggleMute()">🔇</button>
+        <button class="btn" onclick="clearCanvas()">重置</button>
+    </div>
+
+    <div id="info-modal" class="modal" onclick="toggleInfo()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2>🌌 星塵流體 (Stardust Zen)</h2>
+            <p><strong>應用場景：</strong></p>
+            <p>1. <strong>情緒舒緩空間：</strong> 適合讓處於焦慮或激動情緒的服務對象，在 iPad 上隨意滑動，透過視覺與聽覺的回饋平復心情。<br>
+               2. <strong>靜觀體驗 (Mindfulness)：</strong> 配合呼吸，觀察光點的生滅與聚散。<br>
+               3. <strong>AI 共鳴：</strong> 讓服務對象輸入當下的感受（如「我很累」），系統會利用 AI 生成專屬的顏色頻率、動態模式及療癒音效。</p>
+            <button class="close-btn" onclick="toggleInfo()">開始體驗</button>
+        </div>
+    </div>
+
+    <div id="ai-modal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-top:0; font-weight:300; letter-spacing:1px; color:#ddd;">✨ 聲景共鳴</h2>
+            <p style="color:#777; font-size:0.9rem;">輸入當下感受，讓 AI 為你調整頻率...</p>
+            <textarea id="user-input" placeholder="例如：很累，想要深沉一點的顏色..."></textarea>
+            <div class="modal-actions" style="display:flex; justify-content:space-between; gap:10px;">
+                <button class="btn" onclick="closeAIModal()" style="flex:1;">取消</button>
+                <button class="btn btn-ai" onclick="generateZen()" style="flex:1;">
+                    <span id="loading-spinner" class="loader"></span>開始
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { alpha: false }); 
+        
+        // ⚠️ 請填入你「重新產生」的新 API Key ⚠️
+        const apiKey = "AIzaSyCxsn-HMBYLZgOHBbXqFjBdRrM438RektI"; 
+        
+        // --- ✨ 說明書控制 ---
+        function toggleInfo() {
+            const modal = document.getElementById('info-modal');
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        // --- 聲音引擎 ---
+        class GenerativeAudio {
+            constructor() {
+                this.ctx = null;
+                this.masterGain = null;
+                this.isMuted = true;
+                this.baseFreq = 196.00;
+                this.isPlaying = false;
+                this.timerId = null;
+                this.scaleRatios = [1, 9/8, 5/4, 3/2, 5/3]; 
+            }
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                    this.masterGain = this.ctx.createGain();
+                    this.masterGain.connect(this.ctx.destination);
+                    this.masterGain.gain.setValueAtTime(0, this.ctx.currentTime);
+                }
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+            }
+            playNote() {
+                if (this.isMuted || !this.isPlaying) return;
+                const now = this.ctx.currentTime;
+                const ratio = this.scaleRatios[Math.floor(Math.random() * this.scaleRatios.length)];
+                const octaveMap = [-1, 0, 0, 0, 1];
+                const octave = octaveMap[Math.floor(Math.random() * octaveMap.length)];
+                const freq = this.baseFreq * ratio * Math.pow(2, octave);
+                const osc = this.ctx.createOscillator();
+                const noteGain = this.ctx.createGain();
+                const panner = this.ctx.createStereoPanner();
+                osc.type = Math.random() > 0.7 ? 'triangle' : 'sine';
+                osc.frequency.value = freq;
+                osc.connect(noteGain);
+                noteGain.connect(panner);
+                panner.connect(this.masterGain);
+                panner.pan.value = (Math.random() * 1.4) - 0.7;
+                const attack = 2 + Math.random() * 3;
+                const hold = 1 + Math.random() * 2;
+                const release = 4 + Math.random() * 4;
+                noteGain.gain.setValueAtTime(0, now);
+                const maxVol = 0.05 + Math.random() * 0.05; 
+                noteGain.gain.linearRampToValueAtTime(maxVol, now + attack);
+                noteGain.gain.setValueAtTime(maxVol, now + attack + hold);
+                noteGain.gain.exponentialRampToValueAtTime(0.001, now + attack + hold + release);
+                osc.start(now);
+                osc.stop(now + attack + hold + release + 1);
+                const nextTime = (2000 + Math.random() * 3000); 
+                this.timerId = setTimeout(() => this.playNote(), nextTime);
+            }
+            startGenerative(rootFreq) {
+                this.init();
+                this.baseFreq = rootFreq || 196.00;
+                this.isPlaying = true;
+                this.isMuted = false;
+                document.getElementById('mute-btn').innerText = "🔊";
+                this.masterGain.gain.setTargetAtTime(1.0, this.ctx.currentTime, 2);
+                if (this.timerId) clearTimeout(this.timerId);
+                this.playNote();
+                setTimeout(() => this.playNote(), 1500);
+            }
+            stop() {
+                this.isPlaying = false;
+                if (this.timerId) clearTimeout(this.timerId);
+                if (this.masterGain) this.masterGain.gain.setTargetAtTime(0, this.ctx.currentTime, 1);
+            }
+            toggleMute() {
+                this.init();
+                if (this.isMuted) {
+                    this.isMuted = false;
+                    this.isPlaying = true;
+                    this.masterGain.gain.setTargetAtTime(1.0, this.ctx.currentTime, 1);
+                    document.getElementById('mute-btn').innerText = "🔊";
+                    this.playNote();
+                } else {
+                    this.isMuted = true;
+                    this.isPlaying = false;
+                    this.masterGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.5);
+                    document.getElementById('mute-btn').innerText = "🔇";
+                    if (this.timerId) clearTimeout(this.timerId);
+                }
+            }
+        }
+        const audioGen = new GenerativeAudio();
+
+        // --- 視覺引擎 ---
+        let width, height;
+        let particles = [];
+        let mouse = { x: null, y: null, isPressed: false };
+        let baseHue = 0; 
+        let mode = 'flow';
+        let aiConfig = { 
+            active: false, targetHues: [], currentHueIndex: 0, lerpHue: 0, 
+            speedMod: 1.0, gravityMod: 1.0, message: "" 
+        };
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                let speedBase = (Math.random() * 3 + 0.5) * aiConfig.speedMod;
+                
+                if (mode === 'flow') {
+                    this.size = Math.random() * 5 + 1.5; 
+                    const angle = Math.random() * Math.PI * 2;
+                    this.vx = Math.cos(angle) * speedBase;
+                    this.vy = Math.sin(angle) * speedBase;
+                    this.friction = 0.98;
+                    this.gravity = 0;
+                    this.shrink = 0.05;
+                } else {
+                    this.size = Math.random() * 8 + 2.5;
+                    this.vx = (Math.random() - 0.5) * 4 * aiConfig.speedMod;
+                    this.vy = (Math.random() - 0.5) * 4 * aiConfig.speedMod;
+                    this.friction = 0.99;
+                    this.gravity = 0.05 * aiConfig.gravityMod;
+                    this.shrink = 0.02;
+                }
+                
+                let hueToUse = aiConfig.active && aiConfig.targetHues.length > 0 ? aiConfig.lerpHue : baseHue;
+                this.color = `hsl(${hueToUse}, 80%, 50%)`; 
+                this.life = 100;
+            }
+            update() {
+                this.vx *= this.friction;
+                this.vy *= this.friction;
+                if (mode === 'orbit' && mouse.isPressed && mouse.x) {
+                    const dx = mouse.x - this.x;
+                    const dy = mouse.y - this.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist > 10) {
+                        const force = 0.5 * aiConfig.speedMod;
+                        this.vx += (dx/dist)*force;
+                        this.vy += (dy/dist)*force;
+                    }
+                } else if (mode === 'orbit') this.vy += this.gravity;
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.x > width || this.x < 0) this.vx *= -0.8;
+                if (this.y > height || this.y < 0) {
+                    this.vy *= -0.8;
+                    if (this.y > height) this.y = height;
+                }
+                this.size -= this.shrink;
+                this.life -= 1;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, Math.max(0, this.size), 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.shadowBlur = 10; 
+                ctx.shadowColor = this.color;
+            }
+        }
+
+        function handleInput(x, y) {
+            mouse.x = x;
+            mouse.y = y;
+            const count = mode === 'flow' ? 3 : 2;
+            for (let i = 0; i < count; i++) particles.push(new Particle(x, y));
+        }
+
+        // 綁定事件 (避開按鈕及彈窗)
+        ['mousemove', 'touchmove'].forEach(evt => 
+            window.addEventListener(evt, e => {
+                if (e.target.closest('button') || e.target.closest('.modal')) return;
+                let cx = e.touches ? e.touches[0].clientX : e.clientX;
+                let cy = e.touches ? e.touches[0].clientY : e.clientY;
+                if (mouse.isPressed || mode === 'flow') handleInput(cx, cy);
+            }, {passive: false})
+        );
+        ['mousedown', 'touchstart'].forEach(evt => 
+            window.addEventListener(evt, e => {
+                if (e.target.closest('button') || e.target.closest('.modal') || e.target.closest('.top-nav')) return;
+                mouse.isPressed = true;
+                let cx = e.touches ? e.touches[0].clientX : e.clientX;
+                let cy = e.touches ? e.touches[0].clientY : e.clientY;
+                mouse.x = cx; mouse.y = cy;
+                for(let i=0; i<10; i++) particles.push(new Particle(cx, cy));
+            }, {passive: false})
+        );
+        ['mouseup', 'touchend'].forEach(evt => window.addEventListener(evt, () => mouse.isPressed = false));
+
+        function setMode(newMode) {
+            mode = newMode;
+            document.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
+            if(newMode !== 'ai' && newMode !== 'mute') document.getElementById(`mode-${newMode}`).classList.add('active');
+        }
+
+        function clearCanvas() {
+            particles = [];
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, width, height);
+            aiConfig = { active: false, targetHues: [], currentHueIndex: 0, lerpHue: 0, speedMod: 1.0, gravityMod: 1.0, message: "" };
+            document.getElementById('ai-message').style.opacity = 0;
+            audioGen.stop();
+            document.getElementById('mute-btn').innerText = "🔇";
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.fillRect(0, 0, width, height);
+            
+            baseHue += 0.5;
+
+            if (aiConfig.active && aiConfig.targetHues.length > 0) {
+                let target = aiConfig.targetHues[aiConfig.currentHueIndex];
+                let diff = target - aiConfig.lerpHue;
+                if (diff > 180) diff -= 360;
+                if (diff < -180) diff += 360;
+                aiConfig.lerpHue += diff * 0.005; 
+                if (aiConfig.lerpHue > 360) aiConfig.lerpHue -= 360;
+                if (aiConfig.lerpHue < 0) aiConfig.lerpHue += 360;
+                if (Math.abs(diff) < 2) aiConfig.currentHueIndex = (aiConfig.currentHueIndex + 1) % aiConfig.targetHues.length;
+            }
+
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+                if (particles[i].size <= 0.2 || particles[i].life <= 0) {
+                    particles.splice(i, 1);
+                    i--;
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // --- AI 生成邏輯 ---
+        function openAIModal() { document.getElementById('ai-modal').style.display = 'flex'; document.getElementById('user-input').focus(); }
+        function closeAIModal() { document.getElementById('ai-modal').style.display = 'none'; }
+        
+        async function fetchWithRetry(url, options) {
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            for (let i = 0; i < delays.length; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.ok) return response;
+                    if (response.status === 429 && i < delays.length - 1) {
+                        await new Promise(resolve => setTimeout(resolve, delays[i]));
+                        continue; 
+                    }
+                    throw new Error(`API 錯誤碼: ${response.status}`);
+                } catch (error) {
+                    if (i === delays.length - 1) throw error;
+                    await new Promise(resolve => setTimeout(resolve, delays[i]));
+                }
+            }
+        }
+        
+        async function generateZen() {
+            const userText = document.getElementById('user-input').value;
+            if (!userText.trim()) return;
+            const spinner = document.getElementById('loading-spinner');
+            spinner.style.display = 'inline-block';
+            
+            try {
+                audioGen.init();
+                
+                const response = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        contents: [{parts: [{text: `
+                        User feeling: "${userText}". 
+                        Return JSON: {
+                            "message": "Poetic comforting phrase in Traditional Chinese (max 20 words)", 
+                            "hues": [array of 2 to 4 numbers 0-360 for HSL colors], 
+                            "speed": 0.5-1.5, 
+                            "gravity": 0.5-1.5, 
+                            "mode": "flow" or "orbit",
+                            "rootFreq": number 130-350
+                        }`}]}],
+                        generationConfig: { responseMimeType: "application/json" }
+                    })
+                });
+                
+                const data = await response.json();
+                const result = JSON.parse(data.candidates[0].content.parts[0].text);
+                
+                applyAIConfig(result);
+                closeAIModal();
+                document.getElementById('user-input').value = "";
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                alert("目前 AI 伺服器較為繁忙，請稍後再試！");
+            } finally {
+                spinner.style.display = 'none';
+            }
+        }
+
+        function applyAIConfig(config) {
+            aiConfig.active = true;
+            aiConfig.targetHues = config.hues || [200];
+            aiConfig.currentHueIndex = 0;
+            aiConfig.lerpHue = aiConfig.targetHues[0];
+            aiConfig.speedMod = config.speed || 1.0;
+            aiConfig.gravityMod = config.gravity || 1.0;
+            if (config.mode) setMode(config.mode);
+            const msgEl = document.getElementById('ai-message');
+            msgEl.innerText = config.message;
+            msgEl.style.opacity = 1;
+            audioGen.startGenerative(config.rootFreq || 196);
+            for(let i=0; i<30; i++) particles.push(new Particle(width/2, height/2));
+        }
+    </script>
+</body>
+</html>
